@@ -1,4 +1,17 @@
 spring:
-  data:
-    mongodb:
-      uri: mongodb://localhost:27017/lokals
+  datasource:
+    url: jdbc:postgresql://localhost:5432/lokaldb
+    username: admin
+    password: lokal123!@#
+  jpa:
+    hibernate:
+      ddl-auto: update
+
+security.jwt.token.secret-key: lokal-dev-secret
+
+logging:
+  level:
+    web: trace
+    org:
+      springframework:
+        security: trace
