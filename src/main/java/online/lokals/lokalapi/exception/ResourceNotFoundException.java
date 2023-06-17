@@ -1,10 +1,15 @@
-package online.lokals.lokalapi.common;
+package online.lokals.lokalapi.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
 @ResponseStatus(HttpStatus.NOT_FOUND)
-public class ResourceNotFoundException extends RuntimeException {
+public class ResourceNotFoundException extends LokalException {
+
+    public ResourceNotFoundException() {
+        super("Resource not found!");
+    }
+
     public ResourceNotFoundException(String message) {
         super(message);
     }

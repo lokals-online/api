@@ -3,3 +3,9 @@ spring:
     active: dev
   jpa:
     open-in-view: false
+  jackson:
+    serialization:
+      fail-on-empty-beans: false
+
+jwt:
+  validityInDays: 1

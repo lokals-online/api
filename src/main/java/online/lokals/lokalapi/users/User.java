@@ -1,30 +1,28 @@
 package online.lokals.lokalapi.users;
 
 
-import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
-
-import java.util.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 @Getter
 @Setter
 @NoArgsConstructor
-@Entity
-@Table(name = "app_user")
-public class User implements UserDetails {
+@Document("user")
+public class User {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private String id;
     private String username;
     private String email;
     private String password;
     private String profilePicture;
+
+    @JsonIgnore
+    private String lokalId;
 
     public User(String username, String encodedPassword) {
         this.username = username;
@@ -36,28 +34,37 @@ public class User implements UserDetails {
         return "User{id='" + id + ", username='" + username + '}';
     }
 
-    @Override
-    public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority("ROLE_USER"));
-    }
+//    @Override
+//    public Collection<? extends GrantedAuthority> getAuthorities() {
+//        return List.of(new SimpleGrantedAuthority("ROLE_USER"));
+//    }
+//
+//    @Override
+//    public boolean isAccountNonExpired() {
+//        return true;
+//    }
+//
+//    @Override
+//    public boolean isAccountNonLocked() {
+//        return true;
+//    }
+//
+//    @Override
+//    public boolean isCredentialsNonExpired() {
+//        return true;
+//    }
+//
+//    @Override
+//    public boolean isEnabled() {
+//        return true;
+//    }
 
-    @Override
-    public boolean isAccountNonExpired() {
-        return false;
-    }
-
-    @Override
-    public boolean isAccountNonLocked() {
-        return false;
-    }
-
-    @Override
-    public boolean isCredentialsNonExpired() {
-        return false;
-    }
-
-    @Override
-    public boolean isEnabled() {
-        return false;
-    }
+//    public Player toPlayer() {
+//        if (this.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_ANONYMOUS"))) {
+//            return new AnonymousPlayer();
+//        }
+//        else {
+//            return new LoggedPlayer(id, username, password);
+//        }
+//    }
 }
