@@ -2,6 +2,8 @@ package online.lokals.lokalapi.game;
 
 import jakarta.annotation.Nonnull;
 
+import java.util.List;
+
 // TODO: make abstract?
 public interface Game {
 
@@ -9,6 +11,7 @@ public interface Game {
 
     @Nonnull String getName();
 
-    @Nonnull Player[] getPlayers();
+    @Nonnull
+    List<? extends Player> getPlayers();
 
 }

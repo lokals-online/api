@@ -5,50 +5,45 @@ import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import online.lokals.lokalapi.game.Game;
-import online.lokals.lokalapi.game.Move;
 import online.lokals.lokalapi.game.Player;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 //@Document("backgammon_classic")
 @Getter
 public class Backgammon implements Game {
 
-    private static final byte SLOT_CAPACITY = 24;
-    private static final Map<Integer, Integer> INITIAL_SETUP = Map.of(5, 5, 7, 3, 12, 5, 23, 2);
+    public static final int HIT_SLOT_INDEX = 24;
+    public static final int PICKING_SLOT_INDEX = -1;
 
 //    @Id
     private String id;
 
-    private Player firstPlayer;
+    private BackgammonPlayer firstPlayer;
 
-    private Player secondPlayer;
+    private BackgammonPlayer secondPlayer;
 
-    private Slot firstPlayerHitSlot;
+    // TODO: private final List<Turn> turns = new ArrayList<>();
+    private Turn turn;
 
-    private Slot secondPlayerHitSlot;
+    private BackgammonStatus status;
 
-    private final Slot[] slots = new Slot[SLOT_CAPACITY];
-
-    private final List<Turn> turns = new ArrayList<>();
-
-    private GameStatus status;
+    private Player winner;
+    private boolean mars;
 
     private Backgammon() {
     }
 
     public Backgammon(Player firstPlayer) {
         this.id = String.valueOf(System.currentTimeMillis());
-        this.firstPlayer = firstPlayer;
-        this.firstPlayerHitSlot = new Slot(firstPlayer.getId());
+        this.firstPlayer = new BackgammonPlayer(firstPlayer);
     }
 
     public Backgammon(Player firstPlayer, Player secondPlayer) {
         this.id = String.valueOf(System.currentTimeMillis());
-        this.firstPlayer = firstPlayer;
-        this.firstPlayerHitSlot = Slot.hitSlot(getFirstPlayer().getId());
-        this.secondPlayer = secondPlayer;
-        this.secondPlayerHitSlot = Slot.hitSlot(getSecondPlayer().getId());
+        this.firstPlayer = new BackgammonPlayer(firstPlayer);
+        this.secondPlayer = new BackgammonPlayer(secondPlayer);
     }
 
     @Override
@@ -59,95 +54,140 @@ public class Backgammon implements Game {
 
     @Override
     @Nonnull
-    public Player[] getPlayers() {
-        return new Player[] {firstPlayer, secondPlayer};
+    public List<BackgammonPlayer> getPlayers() {
+        return List.of(firstPlayer, secondPlayer);
+    }
+
+    public BackgammonPlayer getPlayer(@Nonnull String playerId) {
+        return getPlayers().stream()
+                .filter(player -> player.getId().equals(playerId))
+                .findFirst()
+                .orElseThrow();
+    }
+
+    public BackgammonPlayer getOpponent(@Nonnull String playerId) {
+        return getPlayers().stream()
+                .filter(player -> !player.getId().equals(playerId))
+                .findFirst()
+                .orElseThrow();
     }
 
     public void setSecondPlayer(@Nonnull Player secondPlayer) {
-        this.secondPlayer = secondPlayer;
-        this.secondPlayerHitSlot = new Slot(secondPlayer.getId());
+        this.secondPlayer = new BackgammonPlayer(secondPlayer);
     }
 
-    public Slot[] getBoard() {
-        return slots;
-    }
-
-    @Nullable
-    public Turn currentTurn() {
-        if (!GameStatus.STARTED.equals(this.status)) {
-            // TODO: throw checked exception!
-            return null;
+    public BackgammonStatus getStatus() {
+        if (BackgammonStatus.ENDED.equals(this.status)) {
+            return BackgammonStatus.ENDED;
         }
 
-        return this.turns.get(this.turns.size()-1);
+        if (getPlayers().size() < 2) {
+            return BackgammonStatus.WAITING_PLAYERS;
+        }
+
+        if (!isReadyToPlay()) {
+            return BackgammonStatus.WAITING_FIRST_DICES;
+        }
+        else {
+            return turn != null ? BackgammonStatus.STARTED : BackgammonStatus.STARTING;
+        }
+
+        // TODO: return BackgammonStatus.ENDED;
     }
 
     public void start() {
         assert Objects.nonNull(firstPlayer) && Objects.nonNull(secondPlayer);
 
-        for (int i = 0; i < slots.length; i++) {
-            if (INITIAL_SETUP.containsKey(i)) {
-                slots[i] = new Slot(firstPlayer.getId(), INITIAL_SETUP.get(i));
-            } else if (INITIAL_SETUP.containsKey((SLOT_CAPACITY - 1) - i)) {
-                slots[i] = new Slot(secondPlayer.getId(), INITIAL_SETUP.get((SLOT_CAPACITY - 1) - i));
-            } else {
-                slots[i] = Slot.empty();
-            }
-        }
-
-        this.status = GameStatus.STARTED;
-        this.turns.add(Turn.firstTurn(firstPlayer.getId()));
+        this.status = BackgammonStatus.STARTED;
+        this.turn = firstPlayer.getFirstDice() > secondPlayer.getFirstDice() ? new Turn(firstPlayer) : new Turn(secondPlayer);
     }
 
     public Integer[] rollDice() {
-        return Objects.requireNonNull(this.currentTurn()).rollDice();
+        return Objects.requireNonNull(this.turn).rollDice();
     }
 
     public void move(@NotNull String playerId, BackgammonMove move) {
         // validate
-        // get Player
 
-        // check if it is a HIT!
-        if (slots[move.to()].isAHit(playerId)) {
-            if (this.firstPlayer.getId().equals(playerId)) {
-                secondPlayerHitSlot.incrementCount();
-                slots[move.to()].decrementCount();
-            } else {
-                firstPlayerHitSlot.incrementCount();
-                slots[move.to()].decrementCount();
-            }
-        }
+        BackgammonPlayer currentPlayer = getPlayer(playerId);
 
-        // check if it is from hit slot
-        if (move.from() == 24 || move.from() == -1) {
-            if (move.from() == 24 && this.firstPlayer.getId().equals(playerId)) {
-                firstPlayerHitSlot.decrementCount();
-                slots[move.to()].incrementCount(playerId);
-            } else if (move.from() == -1 && this.secondPlayer.getId().equals(playerId)) {
-                secondPlayerHitSlot.decrementCount();
-                slots[move.to()].incrementCount(playerId);
-            }
-        }
-        else {
-            slots[move.from()].decrementCount();
-            slots[move.to()].incrementCount(playerId);
-        }
+        currentPlayer.move(move);
+        getOpponent(playerId).checkHit(move.to());
 
-        Objects.requireNonNull(currentTurn()).addMove(move);
+        turn.addMove(move);
+
+        if (currentPlayer.hasFinished()) {
+            this.winner = currentPlayer;
+            this.mars = getOpponent(currentPlayer.getId()).getPieceCount() == 15;
+            this.status = BackgammonStatus.ENDED;
+        }
     }
 
     public boolean isTurnOver() {
-        if (turns.isEmpty()) {
-            return false;
-        }
-        else {
-            return currentTurn().isOver();
-        }
+        return turn.isOver();
+    }
+
+    public boolean isGameOver() {
+        return firstPlayer.hasFinished() || secondPlayer.hasFinished();
     }
 
     public void changeTurn() {
-        String newTurn = firstPlayer.getId().equals(currentTurn().getPlayerId()) ? secondPlayer.getId() : firstPlayer.getId();
-        this.turns.add(new Turn(newTurn));
+        this.turn = firstPlayer.equals(turn.getPlayer()) ? new Turn(secondPlayer) : new Turn(firstPlayer);
+    }
+
+    public int firstDice(String playerId) {
+        BackgammonPlayer player = getPlayer(playerId);
+        int dice = (int) (Math.random() * 6 + 1);
+        player.setFirstDice(dice);
+        return dice;
+    }
+
+    public boolean isReadyToPlay() {
+        return getPlayers().stream().allMatch(BackgammonPlayer::firstDicePlayed);
+    }
+
+    @Nullable
+    public Set<BackgammonMove> possibleMoves() {
+        if (Objects.isNull(turn) || !turn.dicePlayed()) return null;
+
+        final HashSet<BackgammonMove> moves = new HashSet<>();
+        BackgammonPlayer currentPlayer = getPlayer(turn.getPlayerId());
+        BackgammonPlayer opponent = getOpponent(turn.getPlayerId());
+
+        Integer[] remainingDices = turn.getRemainingDices();
+        if (currentPlayer.getHitSlot().getCount() > 0) {
+            for (Integer dice : remainingDices) {
+                if (opponent.isTargetSlotAvailable(HIT_SLOT_INDEX-dice)) {
+                    moves.add(new BackgammonMove(24, 24-dice));
+                }
+            }
+        }
+        else {
+            for (Integer dice : remainingDices) {
+                currentPlayer.getSlots().values().stream()
+                        .filter(slot -> ((slot.getIndex() - dice) >= 0 && opponent.isTargetSlotAvailable(slot.getIndex() - dice)))
+                        .map(slot -> new BackgammonMove(slot.getIndex(), slot.getIndex()-dice))
+                        .collect(Collectors.toCollection(() -> moves));
+
+                if (currentPlayer.isPicking()) {
+                    // find exact slot that matches the dice
+                    currentPlayer
+                            .getSlot(dice - 1)
+                            .filter(slot -> slot.getCount() > 0)
+                            .ifPresent(slot -> moves.add(new BackgammonMove(slot.getIndex(), -1)));
+
+                    // checking slots greater than dice
+                    if (!currentPlayer.hasSlotsGreaterThanDice(dice)) {
+                        // if there is not any then find the greatest pickable slot
+                        currentPlayer.getSlots().keySet().stream()
+                                .max(Comparator.comparing(Integer::valueOf))
+                                .ifPresent(greatestPickableSlotIndex -> moves.add(new BackgammonMove(greatestPickableSlotIndex, -1)));
+                    }
+                }
+            }
+        }
+
+        return moves;
     }
 }
 

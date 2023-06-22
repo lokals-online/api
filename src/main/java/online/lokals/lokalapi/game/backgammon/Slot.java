@@ -1,73 +1,46 @@
 package online.lokals.lokalapi.game.backgammon;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonView;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
+import online.lokals.lokalapi.game.Player;
 
 @Getter
 @Setter
 @AllArgsConstructor
 class Slot {
 
-    private String playerId;
-    private int count;
-    private final boolean hitSlot;
-
-    public Slot(String playerId) {
-        this.playerId = playerId;
-        this.count = 0;
-        this.hitSlot = false;
-    }
-
-    public Slot(String playerId, boolean hitSlot) {
-        this.playerId = playerId;
-        this.hitSlot = true;
-    }
-
-    public Slot(String playerId, int count) {
-        this(playerId, count, false);
-    }
-
-    public static Slot empty() { return new Slot(null); }
-    public static Slot hitSlot(String playerId) {return new Slot(playerId, true);}
-
     @JsonIgnore
-    public boolean isEmpty() {
-        return this.count == 0 || this.playerId == null;
+    private Player player;
+    private int index;
+    private int count;
+
+    public String getPlayerId() {
+        return player.getId();
     }
 
-    public boolean isAHit(@Nonnull String playerId) {
-        return !playerId.equals(this.playerId) && this.count == 1;
-    }
-
-    public void decrementCount() {
-        assert playerId != null;
+    public void decrement() {
+        assert player != null && count != 0;
         this.count--;
-
-        if (this.count == 0 && !isHitSlot()) {
-            setPlayerId(null);
-        }
     }
 
     public void incrementCount() {
-        assert playerId != null;
-        this.count++;
-    }
-
-    public void incrementCount(@Nonnull String playerId) {
-        if (this.count == 0) {
-            setPlayerId(playerId);
-        }
-
+        assert player != null;
         this.count++;
     }
 
     @Override
     public String toString() {
-        return "-["+playerId+":"+count+"]-";
+        return "-["+player+":"+count+"]-";
     }
 
+    public boolean isEmpty() {
+        return count == 0;
+    }
 }

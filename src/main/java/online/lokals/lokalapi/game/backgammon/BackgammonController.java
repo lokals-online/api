@@ -1,5 +1,7 @@
 package online.lokals.lokalapi.game.backgammon;
 
+import jakarta.annotation.Nonnull;
+import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import online.lokals.lokalapi.game.BackgammonRequest;
 import online.lokals.lokalapi.game.NewPlayerRequest;
@@ -58,6 +60,14 @@ public class BackgammonController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/{gameId}/firstDice")
+    private ResponseEntity<Void> firstDice(@PathVariable String gameId, @RequestBody FirstDiceRequest request) {
+        // validation: verify authPlayer
+        backgammonService.firstDice(gameId, request.playerId());
+
+        return ResponseEntity.ok().build();
+    }
+
     @PostMapping("/{gameId}/rollDice")
     private ResponseEntity<Void> rollDice(@PathVariable String gameId) {
         // validation: verify authPlayer & assert matches with current turn
@@ -75,3 +85,5 @@ public class BackgammonController {
     }
 
 }
+
+record FirstDiceRequest(@NotNull String playerId){};

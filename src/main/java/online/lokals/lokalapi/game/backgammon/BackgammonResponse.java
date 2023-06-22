@@ -5,38 +5,44 @@ import jakarta.annotation.Nullable;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import online.lokals.lokalapi.game.Move;
 import online.lokals.lokalapi.game.Player;
+
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 
 // TODO: record?!!!
 @Getter
 public class BackgammonResponse {
 
     private final String id;
-    private final String[] players;
-    private final Slot[] slots;
-    @Nullable private final Slot player1HitSlot;
-    @Nullable private final Slot player2HitSlot;
+    private final BackgammonPlayer firstPlayer;
+    private final BackgammonPlayer secondPlayer;
+    private final BackgammonReport report;
     @Nullable private final Turn turn;
+    private final Set<BackgammonMove> possibleMoves;
 
     public BackgammonResponse(Backgammon backgammon) {
         this.id = backgammon.getId();
-        this.players = new String[] {backgammon.getPlayers()[0].getUsername(), backgammon.getPlayers()[1].getUsername()};
-        this.slots = backgammon.getBoard();
-        this.turn = backgammon.currentTurn();
-        this.player1HitSlot = backgammon.getFirstPlayerHitSlot();
-        this.player2HitSlot = backgammon.getSecondPlayerHitSlot();
+        this.firstPlayer = backgammon.getFirstPlayer();
+        this.secondPlayer = backgammon.getSecondPlayer();
+        this.turn = backgammon.getTurn();
+        this.possibleMoves = backgammon.possibleMoves();
+
+        if (backgammon.isGameOver()) {
+            this.report = new BackgammonReport(backgammon.getWinner().getId(), backgammon.isMars(), backgammon.getStatus());
+        }
+        else {
+            this.report = new BackgammonReport(null, null, backgammon.getStatus());
+        }
     }
 
     @JsonProperty("name")
     public String getName() {
-        if (players.length == 2) {
-            return players[0] + " vs " + players[1];
-        }
-        else if (players.length == 1) {
-            return players[0] + " vs ?";
-        }
-        else {
-            return "? vs ?";
-        }
+        return firstPlayer.getUsername() + " vs " + secondPlayer.getUsername();
     }
+
 }
+
+record BackgammonReport(@Nullable String winner, @Nullable Boolean isMars, BackgammonStatus status) {}

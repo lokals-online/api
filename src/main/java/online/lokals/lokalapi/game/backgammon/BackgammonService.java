@@ -2,6 +2,7 @@ package online.lokals.lokalapi.game.backgammon;
 
 import jakarta.annotation.Nonnull;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import online.lokals.lokalapi.game.Player;
 import org.springframework.boot.CommandLineRunner;
@@ -24,7 +25,7 @@ public class BackgammonService implements CommandLineRunner {
         Player damla = new Player("damla", "damla");
 
         Backgammon backgammon = new Backgammon(ersan, damla);
-        backgammon.start();
+//        backgammon.start();
 
         games.add(backgammon);
     }
@@ -58,21 +59,41 @@ public class BackgammonService implements CommandLineRunner {
         backgammon.start();
     }
 
-    // @Override
-    public Turn currentTurn(@Nonnull String gameId) {
+    public void firstDice(String gameId, String playerId) {
         Backgammon backgammon = get(gameId).orElseThrow();
 
-        return backgammon.currentTurn();
+        int firstDice = backgammon.firstDice(playerId);
+
+        // publish firstDice
+        BackgammonPlayerAction backgammonPlayerAction = BackgammonPlayerAction.firstDice(backgammon.getId(), playerId, firstDice);
+        simpMessagingTemplate.convertAndSend("/topic/" + backgammon.getId(), backgammonPlayerAction);
+
+        if (backgammon.isReadyToPlay()) {
+            backgammon.start();
+
+            BackgammonGameEvent startEvent = BackgammonGameEvent.start(backgammon.getId(), backgammon);
+            simpMessagingTemplate.convertAndSend("/topic/" + backgammon.getId(), startEvent);
+        }
     }
 
     // @Override
+    @SneakyThrows
     public void rollDice(@Nonnull String gameId) {
         Backgammon backgammon = get(gameId).orElseThrow();
         Integer[] rolledDice = backgammon.rollDice();
 
-        BackgammonAction backgammonAction = BackgammonAction.rollDice(backgammon.getId(), backgammon.currentTurn().getPlayerId(), rolledDice);
+        BackgammonPlayerAction backgammonPlayerAction = BackgammonPlayerAction.rollDice(backgammon.getId(), backgammon.getTurn().getPlayer().getId(), rolledDice);
+        simpMessagingTemplate.convertAndSend("/topic/" + backgammon.getId(), backgammonPlayerAction);
 
-        simpMessagingTemplate.convertAndSend("/topic/" + backgammon.getId(), backgammonAction);
+        Set<BackgammonMove> backgammonMoves = backgammon.possibleMoves();
+        if (backgammonMoves != null && backgammonMoves.isEmpty()) {
+            backgammon.changeTurn();
+
+            Thread.sleep(2000);
+
+            BackgammonGameEvent turnHasChangedEvent = BackgammonGameEvent.turnHasChanged(backgammon.getId(), backgammon);
+            simpMessagingTemplate.convertAndSend("/topic/" + backgammon.getId(), turnHasChangedEvent);
+        }
     }
 
     // @Override
@@ -85,11 +106,17 @@ public class BackgammonService implements CommandLineRunner {
             backgammon.move(playRequest.playerId(), move);
         }
 
-        if (backgammon.isTurnOver()) {
+        if (backgammon.isGameOver()) {
+            BackgammonGameEvent turnHasChangedEvent = BackgammonGameEvent.gameOver(backgammon.getId(), backgammon);
+            simpMessagingTemplate.convertAndSend("/topic/" + backgammon.getId(), turnHasChangedEvent);
+
+            return;
+        }
+        else if (backgammon.isTurnOver() || (backgammon.possibleMoves() == null || backgammon.possibleMoves().isEmpty())) {
             backgammon.changeTurn();
         }
 
-        BackgammonAction action = BackgammonAction.move(gameId, playRequest.playerId(), playRequest.moves());
+        BackgammonPlayerAction action = BackgammonPlayerAction.move(gameId, playRequest.playerId(), playRequest.moves());
 
         simpMessagingTemplate.convertAndSend("/topic/" + backgammon.getId(), action);
     }
@@ -101,7 +128,6 @@ public class BackgammonService implements CommandLineRunner {
         Player damla = new Player("damla", "damla");
 
         Backgammon backgammon = new Backgammon(ersan, damla);
-        backgammon.start();
 
         games.add(backgammon);
 

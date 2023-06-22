@@ -1,36 +1,37 @@
 package online.lokals.lokalapi.game.backgammon;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.annotation.Nullable;
+import jakarta.validation.constraints.NotNull;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
+
+import static java.util.function.Predicate.not;
 
 @Getter
 @Setter
 public class Turn {
 
-//    @NotNull
-//    private Integer index;
-
-    private String playerId;
+    @NotNull
+    @JsonBackReference
+    private BackgammonPlayer player;
 
     private Integer[] dices;
 
     @Setter(AccessLevel.PRIVATE)
     private Integer moveCount;
 
-    // TODO: set initial capacity?
     private List<BackgammonMove> moves = new ArrayList<>();
 
-    public Turn(String playerId) {
-        this.playerId = playerId;
-    }
-
-    static Turn firstTurn(String playerId) {
-        return new Turn(playerId);
+    public Turn(BackgammonPlayer player) {
+        this.player = player;
     }
 
     public void addMove(BackgammonMove backgammonMove) {
@@ -52,18 +53,47 @@ public class Turn {
     }
 
     @JsonIgnore
-    public boolean isOver() {
-        int diceTotal = moves.stream().mapToInt(BackgammonMove::getDice).reduce(0, Integer::sum);
-        if (dices[0].equals(dices[1])) {
-            return diceTotal == dices[0] * 4;
+    public boolean dicePlayed() {
+        return dices != null;
+    }
+
+    @JsonIgnore
+    public boolean isDoubleDice() {
+        return (this.dices[0].equals(this.dices[1]));
+    }
+
+    public Integer[] getRemainingDices() {
+        if (dices == null || dices.length == 0) return null;
+
+        List<Integer> playedDices = moves.stream().map(BackgammonMove::getDice).toList();
+        if (playedDices.isEmpty()) return dices;
+
+        if (isDoubleDice()) {
+            final Integer[] remainingDices = new Integer[4-playedDices.size()];
+            Arrays.fill(remainingDices, dices[0]);
+            return remainingDices;
         }
         else {
-            return diceTotal == dices[0] + dices[1];
+            return Arrays.stream(dices).filter(not(playedDices::contains)).toArray(Integer[]::new);
+        }
+    }
+
+    public String getPlayerId() {
+        return player.getId();
+    }
+
+    @JsonIgnore
+    public boolean isOver() {
+        if (dices[0].equals(dices[1])) {
+            return moves.size() == 4;
+        }
+        else {
+            return moves.size() == 2;
         }
     }
 
     @Override
     public String toString() {
-        return "Current Turn{playerId=" + playerId + "}";
+        return "Current Turn{playerId=" + player.toString() + "}";
     }
 }
