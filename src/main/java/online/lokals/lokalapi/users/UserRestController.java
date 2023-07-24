@@ -15,7 +15,6 @@ public class UserRestController {
     private final MessageSource messageSource;
 
     @GetMapping(value = "/{username}", produces = "application/json;charset=UTF-8")
-//    public @ResponseBody User getUserByUsername(@PathVariable String username, @AuthenticationPrincipal User currentUser) throws ResourceNotFoundException {
     public @ResponseBody User getUserByUsername(@PathVariable String username) throws ResourceNotFoundException {
         return userRepository
                 .findByUsername(username)
@@ -23,7 +22,6 @@ public class UserRestController {
     }
 
     @PostMapping(value = "/{username}", produces = "application/json;charset=UTF-8")
-//    public @ResponseBody User postUserByUsername(@PathVariable String username, @AuthenticationPrincipal User currentUser) throws ResourceNotFoundException {
     public @ResponseBody User postUserByUsername(@PathVariable String username) throws ResourceNotFoundException {
         return userRepository
                 .findByUsername(username)

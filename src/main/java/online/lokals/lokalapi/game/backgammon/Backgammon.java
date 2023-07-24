@@ -4,7 +4,6 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
-import online.lokals.lokalapi.game.Game;
 import online.lokals.lokalapi.game.Player;
 
 import java.util.*;
@@ -46,8 +45,13 @@ public class Backgammon implements Game {
         this.secondPlayer = new BackgammonPlayer(secondPlayer);
     }
 
-    @Override
     @Nonnull
+    public String getTitle() {
+        return getPlayers().stream().map(BackgammonPlayer::getUsername).collect(Collectors.joining(" vs. "));
+    }
+
+    @Nonnull
+    @Override
     public String getName() {
         return "backgammon";
     }
@@ -55,7 +59,12 @@ public class Backgammon implements Game {
     @Override
     @Nonnull
     public List<BackgammonPlayer> getPlayers() {
-        return List.of(firstPlayer, secondPlayer);
+        if (secondPlayer != null) {
+            return List.of(firstPlayer, secondPlayer);
+        }
+        else {
+            return List.of(firstPlayer);
+        }
     }
 
     public BackgammonPlayer getPlayer(@Nonnull String playerId) {
@@ -99,7 +108,14 @@ public class Backgammon implements Game {
         assert Objects.nonNull(firstPlayer) && Objects.nonNull(secondPlayer);
 
         this.status = BackgammonStatus.STARTED;
-        this.turn = firstPlayer.getFirstDice() > secondPlayer.getFirstDice() ? new Turn(firstPlayer) : new Turn(secondPlayer);
+//        this.turn = firstPlayer.getFirstDice() > secondPlayer.getFirstDice() ? new Turn(firstPlayer) : new Turn(secondPlayer);
+    }
+
+    public int firstDice(String playerId) {
+        BackgammonPlayer player = getPlayer(playerId);
+        int dice = (int) (Math.random() * 6 + 1);
+        player.setFirstDice(dice);
+        return dice;
     }
 
     public Integer[] rollDice() {
@@ -128,18 +144,11 @@ public class Backgammon implements Game {
     }
 
     public boolean isGameOver() {
-        return firstPlayer.hasFinished() || secondPlayer.hasFinished();
+        return BackgammonStatus.STARTED.equals(this.status) && (firstPlayer.hasFinished() || secondPlayer.hasFinished());
     }
 
     public void changeTurn() {
         this.turn = firstPlayer.equals(turn.getPlayer()) ? new Turn(secondPlayer) : new Turn(firstPlayer);
-    }
-
-    public int firstDice(String playerId) {
-        BackgammonPlayer player = getPlayer(playerId);
-        int dice = (int) (Math.random() * 6 + 1);
-        player.setFirstDice(dice);
-        return dice;
     }
 
     public boolean isReadyToPlay() {

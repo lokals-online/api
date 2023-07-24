@@ -18,7 +18,7 @@ public class BackgammonResponse {
 
     private final String id;
     private final BackgammonPlayer firstPlayer;
-    private final BackgammonPlayer secondPlayer;
+    @Nullable private final BackgammonPlayer secondPlayer;
     private final BackgammonReport report;
     @Nullable private final Turn turn;
     private final Set<BackgammonMove> possibleMoves;
@@ -40,7 +40,7 @@ public class BackgammonResponse {
 
     @JsonProperty("name")
     public String getName() {
-        return firstPlayer.getUsername() + " vs " + secondPlayer.getUsername();
+        return firstPlayer.getUsername() + " vs " + (secondPlayer != null ? secondPlayer.getUsername() : "");
     }
 
 }

@@ -21,14 +21,21 @@ public class BackgammonController {
     private final BackgammonService backgammonService;
 
     @GetMapping
-    private ResponseEntity<List<BackgammonResponse>> allGames() {
-        List<BackgammonResponse> backgammonResponses = backgammonService.allGames().stream().map(BackgammonResponse::new).collect(Collectors.toList());
+    private ResponseEntity<List<GamePreviewResponse>> allGames() {
+        List<GamePreviewResponse> backgammonResponses = backgammonService.allGames().stream()
+                .map(backgammon -> new GamePreviewResponse(
+                        backgammon.getId(),
+                        backgammon.getName(),
+                        backgammon.getTitle(),
+                        backgammon.getPlayers().stream().map(BackgammonPlayer::getUsername).toList()))
+                .collect(Collectors.toList());
         return ResponseEntity.ok(backgammonResponses);
     }
 
     @PostMapping("/restart")
-    private ResponseEntity<BackgammonResponse> restart() {
-        return ResponseEntity.ok(new BackgammonResponse(backgammonService.restart()));
+    private ResponseEntity<Void> restart() {
+        backgammonService.resetGames();
+        return ResponseEntity.ok().build();
     }
 
     @PostMapping(consumes = {MediaType.APPLICATION_JSON_VALUE})
@@ -54,7 +61,7 @@ public class BackgammonController {
 
     @PostMapping("/{gameId}/players")
     private ResponseEntity<Void> addPlayer(@PathVariable String gameId, @RequestBody NewPlayerRequest request) {
-        Player player = new Player(request.getPlayerId(), "second");
+        Player player = new Player(request.getPlayerId(), request.getPlayerId());
         backgammonService.addOtherPlayer(gameId, player);
 
         return ResponseEntity.noContent().build();
@@ -86,4 +93,5 @@ public class BackgammonController {
 
 }
 
+record GamePreviewResponse(@Nonnull String id, @Nonnull String name, @Nonnull String title, List<String> players) {};
 record FirstDiceRequest(@NotNull String playerId){};

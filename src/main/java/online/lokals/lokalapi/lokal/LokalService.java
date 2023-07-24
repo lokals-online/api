@@ -15,8 +15,6 @@ public class LokalService {
 
     private final LokalRepository lokalRepository;
 
-    private final UserService userService;
-
     public Lokal findById(@Nonnull String id) {
         return lokalRepository
                 .findById(id)

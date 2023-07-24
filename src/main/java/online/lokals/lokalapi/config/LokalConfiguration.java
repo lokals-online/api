@@ -16,13 +16,14 @@ import java.util.Locale;
 public class LokalConfiguration implements WebMvcConfigurer {
 
     public static final Locale[] LOKAL_AVAILABLE_LOCALES = new Locale[] {new Locale("tr", "TR")};
+    public static final Locale DEFAULT_LOCALE = LOKAL_AVAILABLE_LOCALES[0];
 
     @Bean
     public MessageSource messageSource() {
         ReloadableResourceBundleMessageSource messageSource = new ReloadableResourceBundleMessageSource();
         messageSource.setBasename("classpath:messages");
         messageSource.setDefaultEncoding("UTF-8");
-        messageSource.setDefaultLocale(LOKAL_AVAILABLE_LOCALES[0]);
+        messageSource.setDefaultLocale(DEFAULT_LOCALE);
         return messageSource;
     }
 
@@ -36,7 +37,7 @@ public class LokalConfiguration implements WebMvcConfigurer {
     @Bean
     public LocaleResolver localeResolver() {
         FixedLocaleResolver localeResolver = new FixedLocaleResolver();
-        localeResolver.setDefaultLocale(LOKAL_AVAILABLE_LOCALES[0]);
+        localeResolver.setDefaultLocale(DEFAULT_LOCALE);
         return localeResolver;
     }
 
@@ -47,7 +48,7 @@ public class LokalConfiguration implements WebMvcConfigurer {
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**")
                         .allowedMethods("*")
-                        .allowedOrigins("http://localhost:19006");
+                        .allowedOrigins("http://localhost:19006", "http://192.168.2.27:8080");
             }
         };
     }

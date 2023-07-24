@@ -1,38 +1,41 @@
 package online.lokals.lokalapi.login;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.web.bind.annotation.RestController;
+import online.lokals.lokalapi.security.LokalTokenManager;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
+@CrossOrigin
 public class AuthenticationController {
 
-    @Value("${jwt.validityInDays:1}")
-    private Integer validityInDays;
+    private final AuthenticationManager authenticationManager;
 
-//    private final JwtEncoder encoder;
-//
-//    @PostMapping(value = "/login")
-//    public @ResponseBody LoginResponse login(Authentication authentication) {
-//        Instant now = Instant.now();
-//        long expiry = validityInDays * Duration.ofDays(1).toMillis();
-//        // @formatter:off
-//        String scope = authentication.getAuthorities().stream()
-//                .map(GrantedAuthority::getAuthority)
-//                .collect(Collectors.joining(" "));
-//        JwtClaimsSet claims = JwtClaimsSet.builder()
-//                .issuer("self")
-//                .issuedAt(now)
-//                .expiresAt(now.plusMillis(expiry))
-//                .subject(authentication.getName())
-//                .claim("scope", scope)
-//                .build();
-//        // @formatter:on
-//        String token = this.encoder.encode(JwtEncoderParameters.from(claims)).getTokenValue();
-//
-//        return new LoginResponse(authentication.getName(), token);
-//    }
+    private final UserDetailsService userDetailsService;
+
+    private final LokalTokenManager lokalTokenManager;
+
+    @PostMapping(value = "/login", consumes = "application/json;charset=UTF-8", produces = "application/json;charset=UTF-8")
+    public @ResponseBody LoginResponse login(@RequestBody LoginRequest request) throws Exception {
+        try {
+            authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(request.username(), request.password()));
+        } catch (DisabledException e) {
+            throw new Exception("USER_DISABLED", e);
+        } catch (BadCredentialsException e) {
+            throw new Exception("INVALID_CREDENTIALS", e);
+        }
+        final UserDetails userDetails = userDetailsService.loadUserByUsername(request.username());
+        final String token = lokalTokenManager.generate(userDetails);
+
+        return new LoginResponse(request.username(), token);
+    }
 
 }
 

@@ -1,10 +1,12 @@
 package online.lokals.lokalapi.game;
 
 public class Player {
-    private String id;
-    private String username;
+    private final String id;
+    private final String username;
 
     public Player() {
+        this.id = null;
+        this.username = null;
     }
 
     public Player(String id, String username) {

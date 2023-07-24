@@ -20,18 +20,11 @@ public class BackgammonService implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-
-        Player ersan = new Player("ersan", "ersan");
-        Player damla = new Player("damla", "damla");
-
-        Backgammon backgammon = new Backgammon(ersan, damla);
-//        backgammon.start();
-
-        games.add(backgammon);
+//        addGames(5);
     }
 
     // TODO: sorted set!
-    private final Set<Backgammon> games = new HashSet<>(1);
+    private Set<Backgammon> games = new HashSet<>(10);
 
     public Set<Backgammon> allGames() {
         return games;
@@ -121,16 +114,21 @@ public class BackgammonService implements CommandLineRunner {
         simpMessagingTemplate.convertAndSend("/topic/" + backgammon.getId(), action);
     }
 
-    public Backgammon restart() {
-        games.removeAll(games);
+    public void resetGames() {
+        games = new HashSet<>();
 
-        Player ersan = new Player("ersan", "ersan");
-        Player damla = new Player("damla", "damla");
+        addGames(5);
+    }
 
-        Backgammon backgammon = new Backgammon(ersan, damla);
+    private void addGames(int count) {
+        for (int i = 0; i < count; i++) {
+            Player ersan = new Player("ersan" + i, "ersan" + i);
+            Player damla = new Player("damla" + i, "damla" + i);
 
-        games.add(backgammon);
+            Backgammon backgammon = new Backgammon(ersan, damla);
+//        backgammon.start();
 
-        return backgammon;
+            games.add(backgammon);
+        }
     }
 }

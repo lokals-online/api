@@ -1,18 +1,23 @@
 package online.lokals.lokalapi.game;
 
+import jakarta.annotation.Nonnull;
 import lombok.RequiredArgsConstructor;
-import online.lokals.lokalapi.game.backgammon.Backgammon;
-import online.lokals.lokalapi.game.backgammon.BackgammonService;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-//@RequiredArgsConstructor
-//@RestController
-//@RequestMapping("/game")
-//public class GameController {
-//
-//    private final BackgammonService backgammonService;
-//
+import java.util.List;
+
+@RequiredArgsConstructor
+@RestController
+@RequestMapping("/games")
+public class GameController {
+
+    @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<AvailableGamesResponse> availableGames(@RequestParam(name = "lokalId", defaultValue = "lokal") String lokalId) {
+        return ResponseEntity.ok(new AvailableGamesResponse(lokalId, List.of("backgammon", "pishti")));
+    }
+
 //    @PostMapping
 //    private ResponseEntity<Game> newGame(@RequestBody BackgammonRequest backgammonRequest) {
 //        // TODO: validate
@@ -41,6 +46,7 @@ import org.springframework.web.bind.annotation.*;
 //
 //        return ResponseEntity.noContent().build();
 //    }
-//
-//}
-//
+
+}
+
+record AvailableGamesResponse(@Nonnull String lokalId, List<String> games) {};

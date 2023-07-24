@@ -2,9 +2,12 @@ package online.lokals.lokalapi.registration;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import online.lokals.lokalapi.users.User;
 import online.lokals.lokalapi.users.UserAccountService;
+import online.lokals.lokalapi.users.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.DefaultMessageCodesResolver;
 import org.springframework.web.bind.WebDataBinder;
@@ -19,9 +22,11 @@ import java.net.URI;
 @RequiredArgsConstructor
 public class UserRegistrationController {
 
-    private final UserAccountService userAccountService;
+    private final UserService userService;
 
     private final UserRegistrationValidator userRegistrationValidator;
+
+    private final PasswordEncoder passwordEncoder;
 
     @InitBinder
     public void initBinder(WebDataBinder binder) {
@@ -32,16 +37,15 @@ public class UserRegistrationController {
         binder.addValidators(userRegistrationValidator);
     }
 
-    @PostMapping(value = "/register", produces = "application/json;charset=UTF-8")
+    @PostMapping(value = "/register", consumes = "application/json;charset=UTF-8", produces = "application/json;charset=UTF-8")
     public ResponseEntity<Object> registerUser(@Valid @RequestBody UserRegistrationRequest request, BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
              return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(bindingResult.getAllErrors());
         }
 
         try {
-            if (!request.isAutoCreateLokal()) {
-                userAccountService.register(request.getUsername(), request.getPassword());
-            }
+            String encodedPassword = passwordEncoder.encode(request.getPassword());
+            userService.register(request.getUsername(), encodedPassword);
 
             return ResponseEntity.created(URI.create("/login")).build();
         } catch (Exception e) {

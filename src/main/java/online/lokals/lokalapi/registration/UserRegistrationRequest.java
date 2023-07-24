@@ -23,6 +23,4 @@ class UserRegistrationRequest {
     @Length(min = 9, max = 100)
     private String password;
 
-    private boolean autoCreateLokal;
-
 }
