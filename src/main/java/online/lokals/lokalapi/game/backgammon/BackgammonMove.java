@@ -2,9 +2,29 @@ package online.lokals.lokalapi.game.backgammon;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-// TODO: consider using dice instead of `to` parameter. pros & cons?
-public record BackgammonMove(@NotNull Integer from, @NotNull Integer to) {
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class BackgammonMove {
+
+    @NotNull
+    private Integer from;
+
+    @NotNull
+    private Integer to;
+
+    private Long movedAt;
+
+    public BackgammonMove(@NotNull Integer from, @NotNull Integer to) {
+        this.from = from;
+        this.to = to;
+    }
 
     @JsonIgnore
     public int getDice() {

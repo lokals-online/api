@@ -13,6 +13,6 @@ public interface Game {
     @Nonnull String getName();
 
     @Nonnull
-    List<? extends Player> getPlayers();
+    List<BackgammonPlayer> getPlayers();
 
 }

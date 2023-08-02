@@ -2,16 +2,15 @@ package online.lokals.lokalapi.game.backgammon;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.NotNull;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
+import online.lokals.lokalapi.game.Player;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 
 import static java.util.function.Predicate.not;
 
@@ -21,7 +20,7 @@ public class Turn {
 
     @NotNull
     @JsonBackReference
-    private BackgammonPlayer player;
+    private Player player;
 
     private Integer[] dices;
 
@@ -30,16 +29,18 @@ public class Turn {
 
     private List<BackgammonMove> moves = new ArrayList<>();
 
-    public Turn(BackgammonPlayer player) {
+    public Turn(@NotNull Player player) {
         this.player = player;
     }
 
     public void addMove(BackgammonMove backgammonMove) {
+        backgammonMove.setMovedAt(System.currentTimeMillis());
         this.moves.add(backgammonMove);
     }
 
     @JsonIgnore
     public Integer[] rollDice() {
+//        this.dices = new Integer[]{3, 2};
         this.dices = new Integer[]{(int) (Math.random() * 6 + 1), (int) (Math.random() * 6 + 1)};
 
         if (dices[0].equals(dices[1])) {
@@ -84,6 +85,8 @@ public class Turn {
 
     @JsonIgnore
     public boolean isOver() {
+        if (!dicePlayed()) return false;
+
         if (dices[0].equals(dices[1])) {
             return moves.size() == 4;
         }

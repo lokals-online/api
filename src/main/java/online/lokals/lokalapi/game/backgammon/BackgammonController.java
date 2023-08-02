@@ -32,12 +32,6 @@ public class BackgammonController {
         return ResponseEntity.ok(backgammonResponses);
     }
 
-    @PostMapping("/restart")
-    private ResponseEntity<Void> restart() {
-        backgammonService.resetGames();
-        return ResponseEntity.ok().build();
-    }
-
     @PostMapping(consumes = {MediaType.APPLICATION_JSON_VALUE})
     private ResponseEntity<BackgammonResponse> newGame(@RequestBody BackgammonRequest backgammonRequest) {
         // TODO: validate
@@ -57,12 +51,13 @@ public class BackgammonController {
         Backgammon backgammon = backgammonService.get(gameId).orElseThrow();
 
         return ResponseEntity.ok(new BackgammonResponse(backgammon));
+//        return ResponseEntity.ok(backgammon);
     }
 
     @PostMapping("/{gameId}/players")
     private ResponseEntity<Void> addPlayer(@PathVariable String gameId, @RequestBody NewPlayerRequest request) {
         Player player = new Player(request.getPlayerId(), request.getPlayerId());
-        backgammonService.addOtherPlayer(gameId, player);
+        backgammonService.setOpponent(gameId, player);
 
         return ResponseEntity.noContent().build();
     }

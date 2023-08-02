@@ -4,43 +4,43 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import online.lokals.lokalapi.game.Player;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.MongoId;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-//@Document("backgammon_classic")
+@NoArgsConstructor
 @Getter
+@Document("backgammon_classic")
 public class Backgammon implements Game {
 
     public static final int HIT_SLOT_INDEX = 24;
     public static final int PICKING_SLOT_INDEX = -1;
 
-//    @Id
+    @MongoId
     private String id;
 
     private BackgammonPlayer firstPlayer;
 
     private BackgammonPlayer secondPlayer;
 
-    // TODO: private final List<Turn> turns = new ArrayList<>();
-    private Turn turn;
+    private List<Turn> turns;
 
     private BackgammonStatus status;
 
-    private Player winner;
+    private BackgammonPlayer winner;
+
     private boolean mars;
 
-    private Backgammon() {
-    }
-
-    public Backgammon(Player firstPlayer) {
-        this.id = String.valueOf(System.currentTimeMillis());
-        this.firstPlayer = new BackgammonPlayer(firstPlayer);
+    public Backgammon(Player player) {
+        this.firstPlayer = new BackgammonPlayer(player);
     }
 
     public Backgammon(Player firstPlayer, Player secondPlayer) {
-        this.id = String.valueOf(System.currentTimeMillis());
         this.firstPlayer = new BackgammonPlayer(firstPlayer);
         this.secondPlayer = new BackgammonPlayer(secondPlayer);
     }
@@ -67,6 +67,15 @@ public class Backgammon implements Game {
         }
     }
 
+    @Nullable
+    public Turn currentTurn() {
+        if (this.turns == null || this.turns.isEmpty()) return null;
+
+        int size = this.turns.size();
+        return this.turns.get(size-1);
+    }
+
+
     public BackgammonPlayer getPlayer(@Nonnull String playerId) {
         return getPlayers().stream()
                 .filter(player -> player.getId().equals(playerId))
@@ -79,10 +88,6 @@ public class Backgammon implements Game {
                 .filter(player -> !player.getId().equals(playerId))
                 .findFirst()
                 .orElseThrow();
-    }
-
-    public void setSecondPlayer(@Nonnull Player secondPlayer) {
-        this.secondPlayer = new BackgammonPlayer(secondPlayer);
     }
 
     public BackgammonStatus getStatus() {
@@ -98,17 +103,23 @@ public class Backgammon implements Game {
             return BackgammonStatus.WAITING_FIRST_DICES;
         }
         else {
-            return turn != null ? BackgammonStatus.STARTED : BackgammonStatus.STARTING;
+            return (this.turns == null || this.turns.isEmpty()) ? BackgammonStatus.STARTING : BackgammonStatus.STARTED;
         }
 
         // TODO: return BackgammonStatus.ENDED;
+    }
+
+    public void setSecondPlayer(@Nonnull Player secondPlayer) {
+        this.secondPlayer = new BackgammonPlayer(secondPlayer);
     }
 
     public void start() {
         assert Objects.nonNull(firstPlayer) && Objects.nonNull(secondPlayer);
 
         this.status = BackgammonStatus.STARTED;
-//        this.turn = firstPlayer.getFirstDice() > secondPlayer.getFirstDice() ? new Turn(firstPlayer) : new Turn(secondPlayer);
+        this.turns = new ArrayList<>();
+        Turn turn = firstPlayer.getFirstDice() > secondPlayer.getFirstDice() ? new Turn(firstPlayer.getPlayer()) : new Turn(secondPlayer.getPlayer());
+        this.turns.add(turn);
     }
 
     public int firstDice(String playerId) {
@@ -119,16 +130,21 @@ public class Backgammon implements Game {
     }
 
     public Integer[] rollDice() {
-        return Objects.requireNonNull(this.turn).rollDice();
+        assert currentTurn() != null;
+
+        return Objects.requireNonNull(currentTurn()).rollDice();
     }
 
     public void move(@NotNull String playerId, BackgammonMove move) {
         // validate
+        Turn turn = currentTurn();
+
+        assert Objects.nonNull(turn) && playerId.equals(turn.getPlayerId());
 
         BackgammonPlayer currentPlayer = getPlayer(playerId);
 
         currentPlayer.move(move);
-        getOpponent(playerId).checkHit(move.to());
+        getOpponent(playerId).checkHit(move.getTo());
 
         turn.addMove(move);
 
@@ -140,7 +156,7 @@ public class Backgammon implements Game {
     }
 
     public boolean isTurnOver() {
-        return turn.isOver();
+        return Objects.requireNonNull(currentTurn()).isOver();
     }
 
     public boolean isGameOver() {
@@ -148,7 +164,8 @@ public class Backgammon implements Game {
     }
 
     public void changeTurn() {
-        this.turn = firstPlayer.equals(turn.getPlayer()) ? new Turn(secondPlayer) : new Turn(firstPlayer);
+        Turn turn = firstPlayer.getId().equals(Objects.requireNonNull(currentTurn()).getPlayerId()) ? new Turn(secondPlayer.getPlayer()) : new Turn(firstPlayer.getPlayer());
+        this.turns.add(turn);
     }
 
     public boolean isReadyToPlay() {
@@ -157,6 +174,8 @@ public class Backgammon implements Game {
 
     @Nullable
     public Set<BackgammonMove> possibleMoves() {
+        Turn turn = currentTurn();
+
         if (Objects.isNull(turn) || !turn.dicePlayed()) return null;
 
         final HashSet<BackgammonMove> moves = new HashSet<>();

@@ -1,6 +1,4 @@
 jwt:
-#  private.key: classpath:private.pem
-#  public.key: classpath:public.pem
   secret: lokalsecret_dev
   validityInDays: 365
 
@@ -10,4 +8,4 @@ logging:
     org:
       springframework:
         web: debug
-        security: trace
+        security: debug

@@ -1,8 +1,8 @@
 package online.lokals.lokalapi.game;
 
 public class Player {
-    private final String id;
-    private final String username;
+    private String id;
+    private String username;
 
     public Player() {
         this.id = null;

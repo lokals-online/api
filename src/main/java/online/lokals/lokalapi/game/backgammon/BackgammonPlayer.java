@@ -1,6 +1,8 @@
 package online.lokals.lokalapi.game.backgammon;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import online.lokals.lokalapi.game.Player;
 
@@ -9,30 +11,34 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+@NoArgsConstructor
 @Getter
-public class BackgammonPlayer extends Player {
+@Setter
+public class BackgammonPlayer {
 
     private static final Map<Integer, Integer> INITIAL_SETUP = Map.of(5, 5, 7, 3, 12, 5, 23, 2);
-    private static final Map<Integer, Integer> PICKING_SETUP = Map.of( 0, 5, 3, 4);
+//    private static final Map<Integer, Integer> PICKING_SETUP = Map.of(0, 5, 3, 4);
 
-    private final Map<Integer, Slot> slots;
+    @JsonIgnore
+    private Player player;
 
-    private final Slot hitSlot;
+    private Map<Integer, Slot> slots;
 
-    @Setter
+    private Slot hitSlot;
+
     private Integer firstDice;
 
     public BackgammonPlayer(Player player) {
-        super(player.getId(), player.getUsername());
+        this.player = player;
         this.slots = INITIAL_SETUP.entrySet().stream()
-                .map(slotMap -> new Slot(player, slotMap.getKey(), slotMap.getValue()))
+                .map(slotMap -> new Slot(slotMap.getKey(), slotMap.getValue()))
                 .collect(Collectors.toMap(Slot::getIndex, Function.identity()));
-        this.hitSlot = new Slot(player, Backgammon.HIT_SLOT_INDEX, 0);
+        this.hitSlot = new Slot(Backgammon.HIT_SLOT_INDEX, 0);
     }
 
     @Override
     public String toString() {
-        return "BackgammonPlayer{" + this.getUsername() + '}';
+        return "BackgammonPlayer{" + this.getPlayer() + '}';
     }
 
     public boolean firstDicePlayed() {
@@ -49,10 +55,6 @@ public class BackgammonPlayer extends Player {
         return Optional.ofNullable(slots.get(index));
     }
 
-    public Optional<Slot> getOpponentSlot(int index) {
-        return getSlot(23-index);
-    }
-
     public boolean isTargetSlotAvailable(int targetSlotIndex) {
         return getSlot((23 - targetSlotIndex)).filter(slot -> slot.getCount() > 1).isEmpty();
     }
@@ -60,18 +62,17 @@ public class BackgammonPlayer extends Player {
     public void move(BackgammonMove move) {
         if (move.isFromHitSlot()) {
             hitSlot.decrement();
-            moveTo(move.to());
+            moveTo(move.getTo());
         }
         else if (move.isPicking()) {
-            Slot slot = getSlot(move.from()).orElseThrow();
+            Slot slot = getSlot(move.getFrom()).orElseThrow();
             if (slot.getCount() == 1) slots.remove(slot.getIndex());
             else slot.decrement();
         }
         else {
-            moveFrom(move.from());
-            moveTo(move.to());
+            moveFrom(move.getFrom());
+            moveTo(move.getTo());
         }
-
     }
 
     private void moveFrom(int from) {
@@ -85,7 +86,7 @@ public class BackgammonPlayer extends Player {
     }
 
     private void moveTo(int to) {
-        getSlot(to).ifPresentOrElse(Slot::incrementCount, () -> slots.put(to, new Slot(this, to, 1)));
+        getSlot(to).ifPresentOrElse(Slot::incrementCount, () -> slots.put(to, new Slot(to, 1)));
     }
 
     public void checkHit(Integer to) {
@@ -106,5 +107,13 @@ public class BackgammonPlayer extends Player {
 
     public boolean hasSlotsGreaterThanDice(int dice) {
         return this.isPicking() && slots.keySet().stream().anyMatch(index -> (index+1) > dice);
+    }
+
+    public String getUsername() {
+        return this.getPlayer().getUsername();
+    }
+
+    public String getId() {
+        return getUsername();
     }
 }
