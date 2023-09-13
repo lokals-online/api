@@ -4,109 +4,106 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import online.lokals.lokalapi.game.Player;
 
 import java.util.Map;
-import java.util.Optional;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
+@Slf4j
 @NoArgsConstructor
 @Getter
 @Setter
 public class BackgammonPlayer {
 
-    private static final Map<Integer, Integer> INITIAL_SETUP = Map.of(5, 5, 7, 3, 12, 5, 23, 2);
-//    private static final Map<Integer, Integer> PICKING_SETUP = Map.of(0, 5, 3, 4);
+    private static final Map<Integer, Integer> NORMAL_SETUP = Map.of(5, 5, 7, 3, 12, 5, 23, 2);
+    private static final Map<Integer, Integer> PICKING_SETUP = Map.of(5, 2, 15, 2, 23, 2);
+
+    private static final Map<Integer, Integer> INITIAL_SETUP = PICKING_SETUP;
 
     @JsonIgnore
     private Player player;
 
-    private Map<Integer, Slot> slots;
+    private Map<Integer, Integer> checkers;
 
-    private Slot hitSlot;
-
-    private Integer firstDice;
+    private int hitCheckers;
 
     public BackgammonPlayer(Player player) {
         this.player = player;
-        this.slots = INITIAL_SETUP.entrySet().stream()
-                .map(slotMap -> new Slot(slotMap.getKey(), slotMap.getValue()))
-                .collect(Collectors.toMap(Slot::getIndex, Function.identity()));
-        this.hitSlot = new Slot(Backgammon.HIT_SLOT_INDEX, 0);
-    }
-
-    @Override
-    public String toString() {
-        return "BackgammonPlayer{" + this.getPlayer() + '}';
-    }
-
-    public boolean firstDicePlayed() {
-        return firstDice != null;
+        this.checkers = INITIAL_SETUP;
+        this.hitCheckers = 0;
     }
 
     public boolean isPicking() {
-        if (hitSlot.getCount() > 0) return false;
+        if (hitCheckers > 0) return false;
 
-        return slots.keySet().stream().noneMatch(index -> index > 5);
+        return checkers.keySet().stream().noneMatch(index -> index > 5);
     }
 
-    public Optional<Slot> getSlot(int index) {
-        return Optional.ofNullable(slots.get(index));
+    public Integer getCheckers(int index) {
+        return checkers.getOrDefault(index, 0);
     }
 
-    public boolean isTargetSlotAvailable(int targetSlotIndex) {
-        return getSlot((23 - targetSlotIndex)).filter(slot -> slot.getCount() > 1).isEmpty();
+    public boolean isTargetPointAvailable(int targetIndex) {
+        return getCheckers((23 - targetIndex)) <= 1;
     }
 
+    /**
+     * assuming it's a valid move
+     * @param move
+     */
     public void move(BackgammonMove move) {
         if (move.isFromHitSlot()) {
-            hitSlot.decrement();
-            moveTo(move.getTo());
+            log.trace("from hit slot. to: {}", move.getTo());
+            hitCheckers--;
+            this.moveTo(move.getTo());
         }
         else if (move.isPicking()) {
-            Slot slot = getSlot(move.getFrom()).orElseThrow();
-            if (slot.getCount() == 1) slots.remove(slot.getIndex());
-            else slot.decrement();
+            log.trace("picking from: {}", move.getTo());
+            this.moveFrom(move.getFrom());
         }
         else {
-            moveFrom(move.getFrom());
-            moveTo(move.getTo());
+            log.trace("from: {} to: {}", move.getFrom(), move.getTo());
+            this.moveFrom(move.getFrom());
+            this.moveTo(move.getTo());
         }
     }
 
     private void moveFrom(int from) {
-        Slot fromSlot = getSlot(from).orElseThrow();
-        if (fromSlot.getCount() == 1) {
-            slots.remove(from);
+        Integer checkersCount = getCheckers(from);
+        if (checkersCount == 1) {
+            checkers.remove(from);
         }
         else {
-            fromSlot.decrement();
+            checkers.merge(from, -1, Integer::sum);
         }
     }
 
     private void moveTo(int to) {
-        getSlot(to).ifPresentOrElse(Slot::incrementCount, () -> slots.put(to, new Slot(to, 1)));
+        checkers.merge(to, 1, Integer::sum);
+        //.ifPresentOrElse(Slot::incrementCount, () -> checkers.put(to, new Slot(to, 1)));
     }
 
     public void checkHit(Integer to) {
-        Optional<Slot> hit = getSlot((23 - to));
-        if (hit.isPresent()) {
-            slots.remove(hit.get().getIndex());
-            hitSlot.incrementCount();
+        int targetIndex = 23 - to;
+        Integer checkersCount = getCheckers(targetIndex);
+        log.trace("checking hit possibility for player {}. hit is empty: {}", this.getPlayer(), checkersCount == 0);
+        if (checkersCount > 0) {
+            log.trace("hit index: {}", targetIndex);
+            checkers.remove(targetIndex);
+            hitCheckers++;
         }
     }
 
     public boolean hasFinished() {
-        return slots.isEmpty() && hitSlot.isEmpty();
+        return checkers.isEmpty() && hitCheckers == 0;
     }
 
-    public int getPieceCount() {
-        return slots.values().stream().mapToInt(Slot::getCount).sum();
+    public int totalCheckersCount() {
+        return checkers.values().stream().reduce(0, Integer::sum);
     }
 
-    public boolean hasSlotsGreaterThanDice(int dice) {
-        return this.isPicking() && slots.keySet().stream().anyMatch(index -> (index+1) > dice);
+    public boolean hasGreaterOrEqualCheckers(int dice) {
+        return checkers.keySet().stream().anyMatch(pointIndex -> (pointIndex+1) > dice);
     }
 
     public String getUsername() {
@@ -114,6 +111,12 @@ public class BackgammonPlayer {
     }
 
     public String getId() {
-        return getUsername();
+        return this.getPlayer().getId();
+    }
+
+    @Override
+    public String toString() {
+        return "BackgammonPlayer{" +
+                "p=[" + player + "], hit=[" + hitCheckers + "]}";
     }
 }

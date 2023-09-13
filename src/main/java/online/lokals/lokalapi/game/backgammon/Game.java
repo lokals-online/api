@@ -12,7 +12,4 @@ public interface Game {
 
     @Nonnull String getName();
 
-    @Nonnull
-    List<BackgammonPlayer> getPlayers();
-
 }

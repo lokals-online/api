@@ -2,6 +2,7 @@ package online.lokals.lokalapi.login;
 
 import lombok.RequiredArgsConstructor;
 import online.lokals.lokalapi.security.LokalTokenManager;
+import online.lokals.lokalapi.users.User;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
@@ -34,7 +35,7 @@ public class AuthenticationController {
         final UserDetails userDetails = userDetailsService.loadUserByUsername(request.username());
         final String token = lokalTokenManager.generate(userDetails);
 
-        return new LoginResponse(request.username(), token);
+        return new LoginResponse(((User) userDetails).getId(), request.username(), token);
     }
 
 }

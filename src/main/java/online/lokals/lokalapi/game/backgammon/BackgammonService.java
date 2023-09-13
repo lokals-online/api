@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import online.lokals.lokalapi.game.Player;
+import online.lokals.lokalapi.game.backgammon.event.BackgammonGameEvent;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
@@ -15,102 +16,95 @@ import java.util.*;
 @RequiredArgsConstructor
 public class BackgammonService {
 
+    private static final String BACKGAMMON_TOPIC_DESTINATION = "/topic/game/";
+
     private final SimpMessagingTemplate simpMessagingTemplate;
 
     private final BackgammonRepository backgammonRepository;
 
-    public List<Backgammon> allGames() {
-        return backgammonRepository.findAll();
+
+    Backgammon newMatchForSession(BackgammonSession backgammonSession) {
+        Integer[] firstDices = {backgammonSession.getHomeFirstDice(), backgammonSession.getAwayFirstDice()};
+        Backgammon backgammon = new Backgammon(backgammonSession.getFirstPlayer(), backgammonSession.getSecondPlayer(), firstDices);
+
+        return backgammonRepository.save(backgammon);
     }
 
-    public Backgammon newGame(@Nonnull Player player) {
-        Backgammon backgammon = new Backgammon(player);
-
-        backgammonRepository.save(backgammon);
-
-        return backgammon;
-    }
-
-    public Optional<Backgammon> get(@Nonnull String gameId) {
-        return backgammonRepository.findById(gameId);
-    }
-
-    public void setOpponent(@Nonnull String gameId, @Nonnull Player player) {
-        Backgammon backgammon = get(gameId).orElseThrow();
-        backgammon.setSecondPlayer(player);
-
-        backgammonRepository.save(backgammon);
-    }
-
-    public void firstDice(String gameId, String playerId) {
-        Backgammon backgammon = get(gameId).orElseThrow();
-
-        int firstDice = backgammon.firstDice(playerId);
-
-        // publish firstDice
-        BackgammonPlayerAction backgammonPlayerAction = BackgammonPlayerAction.firstDice(backgammon.getId(), playerId, firstDice);
-        simpMessagingTemplate.convertAndSend("/topic/" + backgammon.getId(), backgammonPlayerAction);
-
-        if (backgammon.isReadyToPlay()) {
-            backgammon.start();
-
-            BackgammonGameEvent startEvent = BackgammonGameEvent.start(backgammon.getId(), backgammon);
-            simpMessagingTemplate.convertAndSend("/topic/" + backgammon.getId(), startEvent);
-        }
-
-        backgammonRepository.save(backgammon);
+    public Backgammon get(@Nonnull String gameId) {
+        return backgammonRepository.findById(gameId).orElseThrow();
     }
 
     // @Override
     @SneakyThrows
-    public void rollDice(@Nonnull String gameId) {
-        Backgammon backgammon = get(gameId).orElseThrow();
+    public void rollDice(@Nonnull String gameId, Player player) {
+        Backgammon backgammon = get(gameId);
+        assert Objects.equals(Objects.requireNonNull(backgammon.currentTurn()).getPlayerId(), player.getId());
         Integer[] rolledDice = backgammon.rollDice();
 
         backgammonRepository.save(backgammon);
 
-        BackgammonPlayerAction backgammonPlayerAction = BackgammonPlayerAction.rollDice(backgammon.getId(), backgammon.currentTurn().getPlayer().getId(), rolledDice);
-        simpMessagingTemplate.convertAndSend("/topic/" + backgammon.getId(), backgammonPlayerAction);
+        BackgammonGameEvent event = BackgammonGameEvent.rollDice(backgammon.getId(), backgammon);
+        simpMessagingTemplate.convertAndSend(BACKGAMMON_TOPIC_DESTINATION + backgammon.getId(), event);
 
         Thread.sleep(2000);
 
         Set<BackgammonMove> backgammonMoves = backgammon.possibleMoves();
         if (backgammonMoves != null && backgammonMoves.isEmpty()) {
-            backgammon.changeTurn();
+            Turn changedTurn = backgammon.changeTurn();
             backgammonRepository.save(backgammon);
 
             Thread.sleep(2000);
 
             BackgammonGameEvent turnHasChangedEvent = BackgammonGameEvent.turnHasChanged(backgammon.getId(), backgammon);
-            simpMessagingTemplate.convertAndSend("/topic/" + backgammon.getId(), turnHasChangedEvent);
+            simpMessagingTemplate.convertAndSend(BACKGAMMON_TOPIC_DESTINATION + backgammon.getId(), turnHasChangedEvent);
         }
     }
 
     // @Override
-    public void move(@Nonnull String gameId, BackgammonPlayRequest playRequest) {
-        Backgammon backgammon = get(gameId).orElseThrow();
+    @SneakyThrows
+    public void move(@Nonnull String gameId, BackgammonPlayRequest playRequest, Player player) {
+        Backgammon backgammon = get(gameId);
+
         // validate move: checkPlayer, checkHitPieces, checkDestinations
+        if (backgammon.possibleMoves() != null && !backgammon.possibleMoves().isEmpty()) {
+
+            boolean isValid = playRequest.moves().stream()
+                    .anyMatch(backgammonMove -> Objects.requireNonNull(backgammon.possibleMoves())
+                            .stream()
+                            .anyMatch(backgammonMove1 -> backgammonMove1.isSame(backgammonMove)));
+
+            if (!isValid) throw new IllegalArgumentException(String.format("it is not a valid move %s", playRequest.moves()));
+        }
 
         // persist move
         for (BackgammonMove move : playRequest.moves()) {
-            backgammon.move(playRequest.playerId(), move);
+            backgammon.move(player, move);
         }
 
         if (backgammon.isGameOver()) {
-            BackgammonGameEvent turnHasChangedEvent = BackgammonGameEvent.gameOver(backgammon.getId(), backgammon);
-            simpMessagingTemplate.convertAndSend("/topic/" + backgammon.getId(), turnHasChangedEvent);
+            backgammonRepository.save(backgammon);
+
+            BackgammonGameEvent gameOverEvent = BackgammonGameEvent.gameOver(backgammon.getId(), backgammon);
+            simpMessagingTemplate.convertAndSend(BACKGAMMON_TOPIC_DESTINATION + backgammon.getId(), gameOverEvent);
 
             return;
         }
 
         if (backgammon.isTurnOver() || (backgammon.possibleMoves() == null || backgammon.possibleMoves().isEmpty())) {
-            backgammon.changeTurn();
+            Turn changedTurn = backgammon.changeTurn();
+
+            backgammonRepository.save(backgammon);
+
+//            Thread.sleep(2000);
+
+            BackgammonGameEvent turnHasChangedEvent = BackgammonGameEvent.turnHasChanged(backgammon.getId(), backgammon);
+            simpMessagingTemplate.convertAndSend(BACKGAMMON_TOPIC_DESTINATION + backgammon.getId(), turnHasChangedEvent);
         }
 
         backgammonRepository.save(backgammon);
 
-        BackgammonPlayerAction action = BackgammonPlayerAction.move(gameId, playRequest.playerId(), playRequest.moves());
+        BackgammonGameEvent event = BackgammonGameEvent.move(gameId, backgammon);
 
-        simpMessagingTemplate.convertAndSend("/topic/" + backgammon.getId(), action);
+        simpMessagingTemplate.convertAndSend(BACKGAMMON_TOPIC_DESTINATION + backgammon.getId(), event);
     }
 }

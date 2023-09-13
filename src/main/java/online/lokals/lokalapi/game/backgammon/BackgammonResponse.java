@@ -16,19 +16,12 @@ public class BackgammonResponse {
     private final Set<BackgammonMove> possibleMoves;
 
     public BackgammonResponse(Backgammon backgammon) {
-        Turn turn1;
         this.id = backgammon.getId();
         this.firstPlayer = backgammon.getFirstPlayer();
         this.secondPlayer = backgammon.getSecondPlayer();
         this.possibleMoves = backgammon.possibleMoves();
+        this.turn = backgammon.currentTurn();
 
-        try {
-            turn1 = backgammon.currentTurn();
-        } catch (Exception e) {
-            turn1 = null;
-        }
-
-        this.turn = turn1;
         if (backgammon.isGameOver()) {
             this.report = new BackgammonReport(backgammon.getWinner().getId(), backgammon.isMars(), backgammon.getStatus());
         }

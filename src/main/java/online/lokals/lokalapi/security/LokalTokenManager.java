@@ -3,6 +3,7 @@ package online.lokals.lokalapi.security;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import online.lokals.lokalapi.users.User;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
@@ -27,8 +28,12 @@ public class LokalTokenManager {
         final long now = System.currentTimeMillis();
         long expirationInMs = validityInDays * Duration.ofDays(1).toMillis();
 
+        User user = (User) userDetails;
+
         Map<String, Object> claims = new HashMap<>();
-        return Jwts.builder().setClaims(claims).setSubject(userDetails.getUsername())
+        return Jwts.builder().setClaims(claims)
+                .setId(user.getId())
+                .setSubject(userDetails.getUsername())
                 .setIssuedAt(new Date(now))
                 .setExpiration(new Date(now + expirationInMs))
                 .signWith(SignatureAlgorithm.HS512, jwtSecret).compact();

@@ -8,6 +8,6 @@ import online.lokals.lokalapi.game.Move;
 
 import java.util.List;
 
-public record BackgammonPlayRequest(String playerId, List<BackgammonMove> moves) {
+public record BackgammonPlayRequest(List<BackgammonMove> moves) {
 
 }

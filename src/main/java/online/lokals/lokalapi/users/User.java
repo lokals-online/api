@@ -69,11 +69,11 @@ public class User implements UserDetails {
     }
 
     public Player toPlayer() {
-        if (this.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_ANONYMOUS"))) {
-            return new AnonymousPlayer();
-        }
-        else {
-            return new Player(id, username);
-        }
+        return new Player(id, username);
+//        if (this.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_ANONYMOUS"))) {
+//            return new AnonymousPlayer();
+//        }
+//        else {
+//        }
     }
 }

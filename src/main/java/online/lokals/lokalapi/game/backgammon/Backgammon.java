@@ -5,34 +5,41 @@ import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import online.lokals.lokalapi.game.Player;
-import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.MongoId;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.springframework.data.repository.util.ClassUtils.ifPresent;
+
+@Slf4j
 @NoArgsConstructor
 @Getter
+@Setter
 @Document("backgammon_classic")
 public class Backgammon implements Game {
 
-    public static final int HIT_SLOT_INDEX = 24;
-    public static final int PICKING_SLOT_INDEX = -1;
+    public static final int HIT_CHECKER_POINT_INDEX = 24;
+    public static final int PICKING_POINT_INDEX = -1;
 
     @MongoId
     private String id;
 
+    @NotNull
     private BackgammonPlayer firstPlayer;
 
+    @NotNull
     private BackgammonPlayer secondPlayer;
 
     private List<Turn> turns;
 
     private BackgammonStatus status;
 
-    private BackgammonPlayer winner;
+    private Player winner;
 
     private boolean mars;
 
@@ -43,11 +50,18 @@ public class Backgammon implements Game {
     public Backgammon(Player firstPlayer, Player secondPlayer) {
         this.firstPlayer = new BackgammonPlayer(firstPlayer);
         this.secondPlayer = new BackgammonPlayer(secondPlayer);
+        this.turns = List.of(new Turn(firstPlayer));
+    }
+
+    public Backgammon(Player firstPlayer, Player secondPlayer, Integer[] dices) {
+        this.firstPlayer = new BackgammonPlayer(firstPlayer);
+        this.secondPlayer = new BackgammonPlayer(secondPlayer);
+        this.turns = List.of(Turn.first(firstPlayer, dices));
     }
 
     @Nonnull
     public String getTitle() {
-        return getPlayers().stream().map(BackgammonPlayer::getUsername).collect(Collectors.joining(" vs. "));
+        return Arrays.stream(getPlayers()).map(BackgammonPlayer::getUsername).collect(Collectors.joining(" vs. "));
     }
 
     @Nonnull
@@ -56,15 +70,9 @@ public class Backgammon implements Game {
         return "backgammon";
     }
 
-    @Override
     @Nonnull
-    public List<BackgammonPlayer> getPlayers() {
-        if (secondPlayer != null) {
-            return List.of(firstPlayer, secondPlayer);
-        }
-        else {
-            return List.of(firstPlayer);
-        }
+    public BackgammonPlayer[] getPlayers() {
+        return new BackgammonPlayer[]{firstPlayer, secondPlayer};
     }
 
     @Nullable
@@ -76,18 +84,23 @@ public class Backgammon implements Game {
     }
 
 
+    @Nullable
     public BackgammonPlayer getPlayer(@Nonnull String playerId) {
-        return getPlayers().stream()
-                .filter(player -> player.getId().equals(playerId))
-                .findFirst()
-                .orElseThrow();
+        return (firstPlayer.getId().equals(playerId)) ? firstPlayer : secondPlayer;
     }
 
+    @Nullable
     public BackgammonPlayer getOpponent(@Nonnull String playerId) {
-        return getPlayers().stream()
-                .filter(player -> !player.getId().equals(playerId))
-                .findFirst()
-                .orElseThrow();
+        BackgammonPlayer[] players = getPlayers();
+
+        if (players.length != 2) return null;
+
+        if (Objects.equals(players[1].getPlayer().getId(), playerId)) {
+            return players[0];
+        }
+        else {
+            return players[1];
+        }
     }
 
     public BackgammonStatus getStatus() {
@@ -95,13 +108,6 @@ public class Backgammon implements Game {
             return BackgammonStatus.ENDED;
         }
 
-        if (getPlayers().size() < 2) {
-            return BackgammonStatus.WAITING_PLAYERS;
-        }
-
-        if (!isReadyToPlay()) {
-            return BackgammonStatus.WAITING_FIRST_DICES;
-        }
         else {
             return (this.turns == null || this.turns.isEmpty()) ? BackgammonStatus.STARTING : BackgammonStatus.STARTED;
         }
@@ -109,24 +115,10 @@ public class Backgammon implements Game {
         // TODO: return BackgammonStatus.ENDED;
     }
 
-    public void setSecondPlayer(@Nonnull Player secondPlayer) {
-        this.secondPlayer = new BackgammonPlayer(secondPlayer);
-    }
-
     public void start() {
-        assert Objects.nonNull(firstPlayer) && Objects.nonNull(secondPlayer);
+        assert (Objects.nonNull(firstPlayer) && Objects.nonNull(secondPlayer)) && Objects.nonNull(currentTurn());
 
         this.status = BackgammonStatus.STARTED;
-        this.turns = new ArrayList<>();
-        Turn turn = firstPlayer.getFirstDice() > secondPlayer.getFirstDice() ? new Turn(firstPlayer.getPlayer()) : new Turn(secondPlayer.getPlayer());
-        this.turns.add(turn);
-    }
-
-    public int firstDice(String playerId) {
-        BackgammonPlayer player = getPlayer(playerId);
-        int dice = (int) (Math.random() * 6 + 1);
-        player.setFirstDice(dice);
-        return dice;
     }
 
     public Integer[] rollDice() {
@@ -135,22 +127,24 @@ public class Backgammon implements Game {
         return Objects.requireNonNull(currentTurn()).rollDice();
     }
 
-    public void move(@NotNull String playerId, BackgammonMove move) {
+    public void move(@NotNull Player player, BackgammonMove move) {
         // validate
         Turn turn = currentTurn();
 
-        assert Objects.nonNull(turn) && playerId.equals(turn.getPlayerId());
+        BackgammonPlayer currentPlayer = getPlayer(player.getId());
+        assert Objects.nonNull(turn) && currentPlayer.getId().equals(turn.getPlayerId());
 
-        BackgammonPlayer currentPlayer = getPlayer(playerId);
+        log.trace("player[{}] is moving move:[from: {}, to: {}]}", player, move.getFrom(), move.getTo());
 
         currentPlayer.move(move);
-        getOpponent(playerId).checkHit(move.getTo());
+        BackgammonPlayer opponent = getOpponent(currentPlayer.getId());
+        opponent.checkHit(move.getTo());
 
         turn.addMove(move);
 
         if (currentPlayer.hasFinished()) {
-            this.winner = currentPlayer;
-            this.mars = getOpponent(currentPlayer.getId()).getPieceCount() == 15;
+            this.winner = currentPlayer.getPlayer();
+            this.mars = getOpponent(currentPlayer.getId()).totalCheckersCount() == 15;
             this.status = BackgammonStatus.ENDED;
         }
     }
@@ -160,16 +154,14 @@ public class Backgammon implements Game {
     }
 
     public boolean isGameOver() {
-        return BackgammonStatus.STARTED.equals(this.status) && (firstPlayer.hasFinished() || secondPlayer.hasFinished());
+        return BackgammonStatus.ENDED.equals(this.status);
     }
 
-    public void changeTurn() {
+    public Turn changeTurn() {
         Turn turn = firstPlayer.getId().equals(Objects.requireNonNull(currentTurn()).getPlayerId()) ? new Turn(secondPlayer.getPlayer()) : new Turn(firstPlayer.getPlayer());
         this.turns.add(turn);
-    }
 
-    public boolean isReadyToPlay() {
-        return getPlayers().stream().allMatch(BackgammonPlayer::firstDicePlayed);
+        return turn;
     }
 
     @Nullable
@@ -182,34 +174,43 @@ public class Backgammon implements Game {
         BackgammonPlayer currentPlayer = getPlayer(turn.getPlayerId());
         BackgammonPlayer opponent = getOpponent(turn.getPlayerId());
 
+        if (currentPlayer == null || opponent == null) {
+            return null;
+        }
+
         Integer[] remainingDices = turn.getRemainingDices();
-        if (currentPlayer.getHitSlot().getCount() > 0) {
+
+        if (remainingDices.length == 0) {
+            return Collections.emptySet();
+        }
+
+        if (currentPlayer.getHitCheckers() > 0) {
             for (Integer dice : remainingDices) {
-                if (opponent.isTargetSlotAvailable(HIT_SLOT_INDEX-dice)) {
+                if (opponent.isTargetPointAvailable(HIT_CHECKER_POINT_INDEX -dice)) {
                     moves.add(new BackgammonMove(24, 24-dice));
                 }
             }
+
+            return moves;
         }
         else {
             for (Integer dice : remainingDices) {
-                currentPlayer.getSlots().values().stream()
-                        .filter(slot -> ((slot.getIndex() - dice) >= 0 && opponent.isTargetSlotAvailable(slot.getIndex() - dice)))
-                        .map(slot -> new BackgammonMove(slot.getIndex(), slot.getIndex()-dice))
+                currentPlayer.getCheckers().keySet().stream()
+                        .filter(integer -> ((integer - dice) >= 0 && opponent.isTargetPointAvailable(integer - dice)))
+                        .map(integer -> new BackgammonMove(integer, integer - dice))
                         .collect(Collectors.toCollection(() -> moves));
 
                 if (currentPlayer.isPicking()) {
                     // find exact slot that matches the dice
-                    currentPlayer
-                            .getSlot(dice - 1)
-                            .filter(slot -> slot.getCount() > 0)
-                            .ifPresent(slot -> moves.add(new BackgammonMove(slot.getIndex(), -1)));
+                    Integer checkers = currentPlayer.getCheckers(dice - 1);
+                    if (checkers > 0) moves.add(new BackgammonMove(dice - 1, -1));
 
-                    // checking slots greater than dice
-                    if (!currentPlayer.hasSlotsGreaterThanDice(dice)) {
-                        // if there is not any then find the greatest pickable slot
-                        currentPlayer.getSlots().keySet().stream()
+                    // checking points greater than dice
+                    if (!currentPlayer.hasGreaterOrEqualCheckers(dice)) {
+                        // if there is not any then find the greatest pickable point
+                        currentPlayer.getCheckers().keySet().stream()
                                 .max(Comparator.comparing(Integer::valueOf))
-                                .ifPresent(greatestPickableSlotIndex -> moves.add(new BackgammonMove(greatestPickableSlotIndex, -1)));
+                                .ifPresent(greatestPickablePoint -> moves.add(new BackgammonMove(greatestPickablePoint, -1)));
                     }
                 }
             }
@@ -218,14 +219,3 @@ public class Backgammon implements Game {
         return moves;
     }
 }
-
-//  public void printBoard() {
-//        IntStream.of(25,24,23,22,21,20,19).forEach(i -> System.out.print(slots[i].toString()));
-//        System.out.print("|||");
-//        IntStream.of(18,17,16,15,14,13).forEach(i -> System.out.print(slots[i].toString()));
-//        System.out.println("\n\n\n");
-//        IntStream.of(0,1,2,3,4,5,6).forEach(i -> System.out.print(slots[i].toString()));
-//        System.out.print("|||");
-//        IntStream.of(7,8,9,10,11,12).forEach(i -> System.out.print(slots[i].toString()));
-//        System.out.print("\n");
-//  }

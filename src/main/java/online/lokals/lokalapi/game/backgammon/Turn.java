@@ -29,6 +29,12 @@ public class Turn {
 
     private List<BackgammonMove> moves = new ArrayList<>();
 
+    public static Turn first(@NotNull Player player, Integer[] dices) {
+        Turn turn = new Turn(player);
+        turn.setDices(dices);
+        return turn;
+    }
+
     public Turn(@NotNull Player player) {
         this.player = player;
     }
@@ -97,6 +103,6 @@ public class Turn {
 
     @Override
     public String toString() {
-        return "Current Turn{playerId=" + player.toString() + "}";
+        return "Current Turn{" + player.getUsername() + "}";
     }
 }

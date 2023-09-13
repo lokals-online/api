@@ -1,19 +1,21 @@
-package online.lokals.lokalapi.game;
+package online.lokals.lokalapi.game.pishti;
 
 import jakarta.annotation.Nullable;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import online.lokals.lokalapi.game.backgammon.BackgammonSettings;
 
 @Getter
 @Setter
 @NoArgsConstructor
-public class BackgammonRequest {
+public class PishtiRequest {
 
+    // TODO: Player{}
     @Nullable
     private String opponent;
 
-    private BackgammonSettings settings;
+    private PishtiSettings settings;
 
 }
+
+record PishtiSettings(int raceTo, @Nullable Integer timeLimit) {}

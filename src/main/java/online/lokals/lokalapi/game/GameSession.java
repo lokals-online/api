@@ -13,7 +13,7 @@ import java.util.stream.IntStream;
     // TODO:  protected boolean isTeamGame = false;
 @Getter
 @Setter
-@Document
+//@Document
 public class GameSession {
 
     @Id
