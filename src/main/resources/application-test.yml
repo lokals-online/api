@@ -1,0 +1,13 @@
+jwt:
+  secret: parolaisaret
+  validityInDays: 365
+
+logging:
+  level:
+    org:
+      springframework:
+        web: debug
+        security: debug
+    online.lokals.lokalapi.game:
+      backgammon: trace
+      pishti: trace

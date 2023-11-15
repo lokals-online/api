@@ -1,10 +1,10 @@
 package online.lokals.lokalapi.game.pishti;
 
+import java.util.List;
+import java.util.Optional;
+
 import jakarta.annotation.Nullable;
 import online.lokals.lokalapi.game.Player;
-
-import java.util.List;
-import java.util.Objects;
 
 public class PishtiResponse {
 
@@ -21,19 +21,24 @@ public class PishtiResponse {
     public PishtiOpponentResponse opponent;
     public List<Card> stack;
 
-    public PishtiResponse(Pishti pishti, String currentPlayerName) {
+    public PishtiResponse(Pishti pishti, Player player) {
         this.id = pishti.getId();
         this.turn = pishti.getTurn();
         this.stack = pishti.getStack();
         this.remainingCardCount = pishti.getCards().size();
 
-        final PishtiPlayer currentPlayer = pishti.getPlayer(currentPlayerName);
-        this.hand = currentPlayer.getHand();
-        this.capturedCards = currentPlayer.getCapturedCards();
-        this.pishtis = currentPlayer.getPishtis();
-        this.score = currentPlayer.getScore();
+        final Optional<PishtiPlayer> currentPlayerOptional = pishti.getPlayer(player.getId());
+        if (currentPlayerOptional.isPresent()) {
+            var currentPlayer = currentPlayerOptional.get();
+            this.hand = currentPlayer.getHand();
+            this.capturedCards = currentPlayer.getCapturedCards();
+            this.pishtis = currentPlayer.getPishtis();
+            this.score = currentPlayer.getScore();
+        }
 
-        PishtiPlayer pishtiOpponent = pishti.getOpponent(currentPlayerName);
-        this.opponent = Objects.isNull(pishtiOpponent) ? null : new PishtiOpponentResponse(pishtiOpponent);
+        Optional<PishtiPlayer> pishtiOpponentOptional = pishti.getOpponent(player.getId());
+        if (pishtiOpponentOptional.isPresent()) {
+            this.opponent = new PishtiOpponentResponse(pishtiOpponentOptional.get());
+        }
     }
 }

@@ -3,8 +3,6 @@ package online.lokals.lokalapi.game.backgammon;
 import lombok.Getter;
 import lombok.Setter;
 import online.lokals.lokalapi.game.Player;
-import online.lokals.lokalapi.game.pishti.Pishti;
-import online.lokals.lokalapi.game.pishti.PishtiResponse;
 
 import java.util.Objects;
 
@@ -18,8 +16,8 @@ public class BackgammonSessionResponse {
     private BackgammonSettings settings;
     private BackgammonResponse currentMatch;
     private String status;
-    private long homeScore;
-    private long awayScore;
+    private int homeScore;
+    private int awayScore;
     private Integer homeFirstDice;
     private Integer awayFirstDice;
 
@@ -30,12 +28,17 @@ public class BackgammonSessionResponse {
         this.homeFirstDice = backgammonSession.getHomeFirstDice();
         this.awayFirstDice = backgammonSession.getAwayFirstDice();
         this.settings = backgammonSession.getSettings();
-        if (Objects.equals(backgammonSession.getStatus(), BackgammonSessionStatus.STARTED)) {
+        if (Objects.equals(backgammonSession.getStatus(), BackgammonSessionStatus.STARTED) || 
+            Objects.equals(backgammonSession.getStatus(), BackgammonSessionStatus.ENDED)) {
             Backgammon backgammon = backgammonSession.getMatches().get(backgammonSession.getMatches().size() - 1);
             this.currentMatch = new BackgammonResponse(backgammon);
-
-            this.homeScore = backgammonSession.getScoreBoard().getOrDefault(home.getUsername(), 0L);
-            this.awayScore = backgammonSession.getScoreBoard().getOrDefault(away.getUsername(), 0L);
+        }
+        this.homeScore = backgammonSession.getHomeScore();
+        if (Objects.nonNull(away)) {
+            this.awayScore = backgammonSession.getAwayScore();
+        }
+        else {
+            this.awayScore = 0;
         }
         this.status = backgammonSession.getStatus().name();
     }

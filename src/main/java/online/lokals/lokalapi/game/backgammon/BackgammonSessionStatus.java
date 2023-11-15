@@ -1,5 +1,5 @@
 package online.lokals.lokalapi.game.backgammon;
 
 public enum BackgammonSessionStatus {
-    WAITING, STARTED, ENDED
+    WAITING_OPPONENT, WAITING, STARTED, ENDED
 }

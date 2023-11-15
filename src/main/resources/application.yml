@@ -1,8 +1,15 @@
+server:
+  port: 8082
+
 spring:
   profiles:
     active: dev
   jpa:
     open-in-view: false
+  data:
+    mongodb:
+      host: mongodb
+      port: 27017
   jackson:
     serialization:
       fail-on-empty-beans: false

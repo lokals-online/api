@@ -1,4 +1,4 @@
-package online.lokals.lokalapi.registration;
+package online.lokals.lokalapi.chirak.registration;
 
 import lombok.RequiredArgsConstructor;
 import online.lokals.lokalapi.users.UserAccountService;

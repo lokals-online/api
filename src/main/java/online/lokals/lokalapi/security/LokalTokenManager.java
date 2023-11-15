@@ -9,7 +9,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
-import java.time.Instant;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -31,7 +30,8 @@ public class LokalTokenManager {
         User user = (User) userDetails;
 
         Map<String, Object> claims = new HashMap<>();
-        return Jwts.builder().setClaims(claims)
+        return Jwts.builder()
+                .setClaims(claims)
                 .setId(user.getId())
                 .setSubject(userDetails.getUsername())
                 .setIssuedAt(new Date(now))
@@ -47,6 +47,11 @@ public class LokalTokenManager {
     public String getUsernameFromToken(String token) {
         final Claims claims = Jwts.parser().setSigningKey(jwtSecret).parseClaimsJws(token).getBody();
         return claims.getSubject();
+    }
+
+    public String getIdFromToken(String token) {
+        final Claims claims = Jwts.parser().setSigningKey(jwtSecret).parseClaimsJws(token).getBody();
+        return claims.getId();
     }
 
 }

@@ -16,7 +16,7 @@ import java.util.*;
 @RequiredArgsConstructor
 public class BackgammonService {
 
-    private static final String BACKGAMMON_TOPIC_DESTINATION = "/topic/game/";
+    private static final String BACKGAMMON_TOPIC_DESTINATION = "/topic/game/backgammon/";
 
     private final SimpMessagingTemplate simpMessagingTemplate;
 
@@ -25,7 +25,10 @@ public class BackgammonService {
 
     Backgammon newMatchForSession(BackgammonSession backgammonSession) {
         Integer[] firstDices = {backgammonSession.getHomeFirstDice(), backgammonSession.getAwayFirstDice()};
-        Backgammon backgammon = new Backgammon(backgammonSession.getFirstPlayer(), backgammonSession.getSecondPlayer(), firstDices);
+        String winnerId = (backgammonSession.getCurrentMatch() != null && backgammonSession.getCurrentMatch().getWinner() != null) ? 
+            backgammonSession.getCurrentMatch().getWinner().getId() : null;
+
+        Backgammon backgammon = new Backgammon(backgammonSession.getFirstPlayer(), backgammonSession.getSecondPlayer(), firstDices, winnerId);
 
         return backgammonRepository.save(backgammon);
     }
@@ -37,9 +40,14 @@ public class BackgammonService {
     // @Override
     @SneakyThrows
     public void rollDice(@Nonnull String gameId, Player player) {
+        log.trace("player[{}] is rolling dice", player.toString());
         Backgammon backgammon = get(gameId);
+        
         assert Objects.equals(Objects.requireNonNull(backgammon.currentTurn()).getPlayerId(), player.getId());
+        
         Integer[] rolledDice = backgammon.rollDice();
+
+        log.trace("player[{}] has rolled dice[]", player.toString(), rolledDice.toString());
 
         backgammonRepository.save(backgammon);
 
@@ -95,8 +103,9 @@ public class BackgammonService {
 
             backgammonRepository.save(backgammon);
 
-//            Thread.sleep(2000);
+           // Thread.sleep(2000);
 
+           // buggy! this should be sent after 'MOVE' event!
             BackgammonGameEvent turnHasChangedEvent = BackgammonGameEvent.turnHasChanged(backgammon.getId(), backgammon);
             simpMessagingTemplate.convertAndSend(BACKGAMMON_TOPIC_DESTINATION + backgammon.getId(), turnHasChangedEvent);
         }

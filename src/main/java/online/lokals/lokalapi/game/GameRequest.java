@@ -1,19 +1,25 @@
 package online.lokals.lokalapi.game;
 
 import jakarta.annotation.Nullable;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import online.lokals.lokalapi.game.backgammon.BackgammonSettings;
 
+import java.util.Map;
+
 @Getter
 @Setter
 @NoArgsConstructor
-public class BackgammonRequest {
+public class GameRequest {
 
-    @Nullable
+    @NotNull
+    private String gameKey;
+
+    @NotNull
     private String opponent;
 
-    private BackgammonSettings settings;
+    private Map<String, Object> settings;
 
 }

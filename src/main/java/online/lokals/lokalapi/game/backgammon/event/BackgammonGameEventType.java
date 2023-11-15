@@ -5,5 +5,5 @@ enum BackgammonGameEventType {
 }
 
 enum BackgammonSessionEventType {
-    SIT, START, FIRST_DICE, END
+    SIT, QUIT, START, FIRST_DIE, END
 }

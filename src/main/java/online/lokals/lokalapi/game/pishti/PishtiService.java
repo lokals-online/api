@@ -4,6 +4,9 @@ import jakarta.annotation.Nonnull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import online.lokals.lokalapi.game.Player;
+import online.lokals.lokalapi.game.pishti.api.PishtiPlayRequest;
+import online.lokals.lokalapi.game.pishti.event.PishtiEvent;
+
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,6 +15,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class PishtiService {
+
+    private static final String PISHTI_TOPIC_DESTINATION = "/topic/game/pishti/";
 
     private final SimpMessagingTemplate simpMessagingTemplate;
 
@@ -25,24 +30,26 @@ public class PishtiService {
         return pishtiRepository.save(pishti);
     }
 
-    PishtiResponse get(@Nonnull String pishtiId, Player player) {
+    public PishtiResponse get(@Nonnull String pishtiId, Player player) {
         Pishti pishti = pishtiRepository.findById(pishtiId).orElseThrow();
 
-        return new PishtiResponse(pishti, player.getUsername());
+        return new PishtiResponse(pishti, player);
     }
 
     @Transactional
     public void play(@Nonnull String pishtiSessionId, @Nonnull String pishtiId, @Nonnull PishtiPlayRequest playRequest, Player player) {
         Pishti pishti = pishtiRepository.findById(pishtiId).orElseThrow();
 
-        if (!pishti.getTurn().equals(player.getUsername())) {
-            throw new IllegalArgumentException(String.format("turn is %s, player: %s", pishti.getTurn(), player.getUsername()));
+        if (!pishti.getTurn().equals(player.getId())) {
+            throw new IllegalArgumentException(String.format("turn is %s, player: %s", pishti.getTurn(), player.getId()));
         }
 
         log.trace("[{}] played {}", player.getUsername(), playRequest.card());
-        pishti.play(player.getUsername(), playRequest.card());
-        // simpMessagingTemplate.convertAndSend("/topic/" + pishtiId, PishtiEvent.cardPlayed(pishtiId, playRequest.card()));
-        // publish card
+        
+        pishti.play(player.getId(), playRequest.card());
+        
+        // publish card (omit for now)
+        // simpMessagingTemplate.convertAndSend(PISHTI_TOPIC_DESTINATION + pishtiId, PishtiEvent.cardPlayed(pishtiId, playRequest.card()));
 
         // CHECK STACK
         if (pishti.checkPishti()) {
@@ -54,27 +61,33 @@ public class PishtiService {
             // publish capture
         }
 
+        if (pishti.checkGameEnded()) {
+            log.info("game ended");
+            log.trace("first player score: {}", pishti.getFirstPlayer().getScore());
+            log.trace("second player score: {}", pishti.getSecondPlayer().getScore());
+
+            pishti.end();
+        }
+
         // check remaining cards
         if (pishti.checkRoundEnded()) {
             log.trace("round ended....");
             pishti.endRound();
 
-            if (pishti.checkGameEnded()) {
-                pishti.end();
-            } else {
-                pishti.startNewSeries();
-            }
+            log.trace("checking game ended!");
+            
+            pishti.startNewSeries();
         }
         else {
             // check hands
             pishti.dealHands();
             // change turn
             String changedTurn = pishti.changeTurn();
-
-            simpMessagingTemplate.convertAndSend("/topic/" + pishtiId, PishtiEvent.changeTurn(pishtiId, changedTurn));
         }
 
         pishtiRepository.save(pishti);
+
+        simpMessagingTemplate.convertAndSend(PISHTI_TOPIC_DESTINATION + pishtiId, PishtiEvent.changeTurn(pishtiId, pishti.getTurn()));
     }
 
 

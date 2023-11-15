@@ -1,5 +1,5 @@
 jwt:
-  secret: lokalsecret_dev
+  secret: parolaisaret
   validityInDays: 365
 
 
@@ -7,8 +7,8 @@ logging:
   level:
     org:
       springframework:
-        web: warn
-        security: warn
+        web: trace
+        security: trace
     online.lokals.lokalapi.game:
       backgammon: trace
       pishti: trace

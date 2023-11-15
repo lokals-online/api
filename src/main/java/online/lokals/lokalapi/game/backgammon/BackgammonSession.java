@@ -3,27 +3,29 @@ package online.lokals.lokalapi.game.backgammon;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import online.lokals.lokalapi.game.LokalGames;
+import online.lokals.lokalapi.game.GameSession;
 import online.lokals.lokalapi.game.Player;
-import online.lokals.lokalapi.game.pishti.Pishti;
 import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.MongoId;
 
 import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @Document("backgammon_session")
-public class BackgammonSession {
+public class BackgammonSession implements GameSession {
 
     @MongoId
     private String id;
+
+    private String tableId;
 
     @DBRef
     private List<Backgammon> matches = new ArrayList<>();
@@ -39,27 +41,27 @@ public class BackgammonSession {
 
     private BackgammonSessionStatus status;
 
-    public BackgammonSession(@Nonnull Player home, @Nullable Player away, BackgammonSettings settings) {
+    public BackgammonSession(@Nonnull String tableId, @Nonnull Player home, @Nullable Player away, BackgammonSettings settings) {
+        this.tableId = tableId;
         this.home = home;
         this.away = away;
         this.settings = settings;
-        this.status = BackgammonSessionStatus.WAITING;
+        this.matches = new ArrayList<>();
+        this.status = (away == null) ?
+                BackgammonSessionStatus.WAITING_OPPONENT :
+                BackgammonSessionStatus.WAITING;
     }
 
     public void addMatch(Backgammon backgammon) {
         this.matches.add(backgammon);
     }
 
-    public String getTitle() {
-        return home.getUsername() + " vs. " + (Objects.isNull(away) ? "?" : away.getUsername());
-    }
-
     public int getHomeScore() {
         return ((int) this.getMatches()
                 .stream()
                 .filter(backgammon -> {
-                    if (Objects.nonNull(backgammon.getWinner()) && backgammon.isGameOver()) {
-                        return backgammon.getWinner().equals(home);
+                    if (Objects.nonNull(backgammon.getWinner()) && backgammon.isGameOver() && Objects.nonNull(this.home)) {
+                        return backgammon.getWinner().getId().equals(home.getId());
                     }
                     else {
                         return false;
@@ -72,8 +74,8 @@ public class BackgammonSession {
         return ((int) this.getMatches()
                 .stream()
                 .filter(backgammon -> {
-                    if (Objects.nonNull(backgammon.getWinner()) && backgammon.isGameOver()) {
-                        return backgammon.getWinner().equals(away);
+                    if (Objects.nonNull(backgammon.getWinner()) && backgammon.isGameOver() && Objects.nonNull(this.away)) {
+                        return backgammon.getWinner().getId().equals(away.getId());
                     }
                     else {
                         return false;
@@ -82,23 +84,37 @@ public class BackgammonSession {
                 .count());
     }
 
+    public boolean isNotEnded() {
+        if (this.getStatus() == null) return false;
+
+        return this.getStatus().equals(BackgammonSessionStatus.ENDED);
+    }
+
     @JsonIgnore
     public List<Player> getPlayers() {
         return Arrays.asList(home, away);
     }
 
-    public Map<String, Long> getScoreBoard() {
-        return this.getMatches()
-                .stream()
-                .filter(backgammon -> Objects.nonNull(backgammon.getWinner()) && backgammon.isGameOver())
-                .map(p -> p.getWinner().getUsername())
-                .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
-
-//        return new int[]{winners.get(home.getUsername()).intValue(), winners.get(away.getUsername()).intValue()};
+    public Map<String, Integer> getScoreBoard() {
+        Map<String, Integer> scoreBoard = new HashMap<String, Integer>();
+        
+        scoreBoard.put(this.home.getId(), this.getHomeScore());
+        
+        if (Objects.nonNull(this.away)) {
+            scoreBoard.put(this.away.getId(), this.getAwayScore());
+        }
+        
+        return scoreBoard;
     }
 
+    @Nullable
     public Backgammon getCurrentMatch() {
-        return this.matches.get(this.matches.size()-1);
+        if (Objects.nonNull(this.matches) && !this.matches.isEmpty()) {
+            return this.matches.get(this.matches.size()-1);
+        }
+        else {
+            return null;
+        }
     }
 
     @Nullable
@@ -124,10 +140,32 @@ public class BackgammonSession {
                 !homeFirstDice.equals(awayFirstDice);
     }
 
+    @Nullable
     public Player getFirstPlayer() {
+        if ((homeFirstDice == null) || (awayFirstDice == null)) return null;
         return (homeFirstDice > awayFirstDice) ? home : away;
     }
     public Player getSecondPlayer() {
+        if ((homeFirstDice == null) || (awayFirstDice == null)) return null;
         return (awayFirstDice > homeFirstDice) ? home : away;
     }
+
+    @Override
+    public String getKey() {
+        return LokalGames.BACKGAMMON.getKey();
+    }
+
+    @Override
+    public boolean removePlayer(@NotNull String playerId) {
+        if (home != null && home.getId().equals(playerId)) {
+            home = null;
+            return true;
+        }
+        else if (away != null && away.getId().equals(playerId)) {
+            away = null;
+            return true;
+        }
+        else return false;
+    }
+
 }

@@ -1,9 +1,7 @@
-package online.lokals.lokalapi.registration;
+package online.lokals.lokalapi.chirak.registration;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import online.lokals.lokalapi.users.User;
-import online.lokals.lokalapi.users.UserAccountService;
 import online.lokals.lokalapi.users.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -11,10 +9,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.DefaultMessageCodesResolver;
 import org.springframework.web.bind.WebDataBinder;
-import org.springframework.web.bind.annotation.InitBinder;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
 
@@ -37,7 +32,7 @@ public class UserRegistrationController {
         binder.addValidators(userRegistrationValidator);
     }
 
-    @PostMapping(value = "/register", consumes = "application/json;charset=UTF-8", produces = "application/json;charset=UTF-8")
+    @PostMapping("/chirak/register")
     public ResponseEntity<Object> registerUser(@Valid @RequestBody UserRegistrationRequest request, BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
              return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(bindingResult.getAllErrors());

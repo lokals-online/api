@@ -1,70 +1,64 @@
 package online.lokals.lokalapi.game.backgammon;
 
-import jakarta.annotation.Nonnull;
-import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
-import online.lokals.lokalapi.game.BackgammonRequest;
-import online.lokals.lokalapi.game.Player;
-import online.lokals.lokalapi.game.backgammon.event.BackgammonGameEvent;
-import online.lokals.lokalapi.game.backgammon.event.BackgammonSessionEvent;
-import online.lokals.lokalapi.users.User;
-import online.lokals.lokalapi.users.UserService;
+import java.util.Map;
+import java.util.Objects;
+
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
+import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
+import online.lokals.lokalapi.game.Player;
+import online.lokals.lokalapi.game.backgammon.event.BackgammonSessionEvent;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class BackgammonSessionService {
 
-    private static final String BACKGAMMON_SESSION_TOPIC_DESTINATION = "/topic/session/";
-    private static final String DUKKAN_TOPIC_DESTINATION = "/topic/dukkan/";
+    private static final String BACKGAMMON_SESSION_TOPIC_DESTINATION = "/topic/session/backgammon/";
 
     private final BackgammonSessionRepository backgammonSessionRepository;
     private final BackgammonService backgammonService;
-    private final UserService userService;
 
     private final SimpMessagingTemplate simpMessagingTemplate;
 
-    List<BackgammonSession> availableSessions() {
-        List<BackgammonSessionStatus> availableSessions = List.of(BackgammonSessionStatus.WAITING, BackgammonSessionStatus.STARTED);
-        return backgammonSessionRepository.findBackgammonSessionsByStatusIn(availableSessions);
-    }
+    public BackgammonSession create(
+            @Nonnull String tableId,
+            @Nonnull Player homePlayer,
+            @Nullable Player awayPlayer,
+            Map<String, Object> gameSettings
+    ) {
 
-    String create(@Nonnull Player homePlayer, BackgammonRequest backgammonRequest) {
-        Player away = null;
-        if (Objects.nonNull(backgammonRequest.getOpponent())) {
-            User opponent = userService.findByUsername(backgammonRequest.getOpponent());
-            away = opponent.toPlayer();
-        }
-
-        BackgammonSession backgammonSession = new BackgammonSession(homePlayer, away, backgammonRequest.getSettings());
+        BackgammonSession backgammonSession = new BackgammonSession(tableId, homePlayer, awayPlayer, new BackgammonSettings(gameSettings));
 
         backgammonSessionRepository.save(backgammonSession);
 
-        BackgammonTableEvent sessionCreated = BackgammonTableEvent.created(backgammonSession);
-        simpMessagingTemplate.convertAndSend(DUKKAN_TOPIC_DESTINATION, sessionCreated);
-
-        return backgammonSession.getId();
+        return backgammonSession;
     }
 
-    public BackgammonSession get(String backgammonSessionId) {
+    public BackgammonSession get(@Nonnull String backgammonSessionId) {
         return backgammonSessionRepository.findById(backgammonSessionId).orElseThrow();
     }
 
-    public void setOpponent(String backgammonSessionId, Player opponent) {
-        BackgammonSession backgammonSession = backgammonSessionRepository.findById(backgammonSessionId).orElseThrow();
+    public void sit(@Nonnull String sessionId, @Nonnull Player opponent) {
+        BackgammonSession backgammonSession = backgammonSessionRepository.findById(sessionId).orElseThrow();
 
         if (Objects.nonNull(backgammonSession.getAway())) {
             throw new IllegalArgumentException("backgammon session[{}] has an away player already!");
         }
 
         backgammonSession.setAway(opponent);
+        if (backgammonSession.getMatches().isEmpty()) {
+            // then it is a new session!
+            backgammonSession.setStatus(BackgammonSessionStatus.WAITING);
+        }
+        else {
+            backgammonSession.setStatus(BackgammonSessionStatus.STARTED);
+        }
         backgammonSessionRepository.save(backgammonSession);
 
         BackgammonSessionEvent event = BackgammonSessionEvent.sit(backgammonSession);
@@ -72,7 +66,7 @@ public class BackgammonSessionService {
     }
 
     @SneakyThrows
-    public void firstDice(String backgammonSessionId, Player player) {
+    public void firstDie(@Nonnull String backgammonSessionId, @Nonnull Player player) {
         BackgammonSession backgammonSession = get(backgammonSessionId);
 
         if (Objects.equals(backgammonSession.getHome().getId(), player.getId())) {
@@ -105,8 +99,9 @@ public class BackgammonSessionService {
         }
 
         backgammonSessionRepository.save(backgammonSession);
-        // publish firstDice
-        BackgammonSessionEvent event = BackgammonSessionEvent.firstDice(backgammonSession);
+
+        // publish firstDie
+        BackgammonSessionEvent event = BackgammonSessionEvent.firstDie(backgammonSession);
         simpMessagingTemplate.convertAndSend(BACKGAMMON_SESSION_TOPIC_DESTINATION + backgammonSession.getId(), event);
 
         if (backgammonSession.isReady()) {
@@ -123,13 +118,19 @@ public class BackgammonSessionService {
         BackgammonSession backgammonSession = get(backgammonSessionId);
 
         // check total wins
-        Map<String, Long> scoreBoard = backgammonSession.getScoreBoard();
+        Map<String, Integer> scoreBoard = backgammonSession.getScoreBoard();
 
         if (!backgammonSession.getStatus().equals(BackgammonSessionStatus.ENDED) &&
-                scoreBoard.containsValue((long) backgammonSession.getSettings().raceTo())) {
+                scoreBoard.containsValue(backgammonSession.getSettings().getRaceTo())) {
 
             backgammonSession.setStatus(BackgammonSessionStatus.ENDED);
             backgammonSessionRepository.save(backgammonSession);
+            
+            BackgammonSessionEvent endEvent = BackgammonSessionEvent.end(backgammonSession);
+            simpMessagingTemplate.convertAndSend(BACKGAMMON_SESSION_TOPIC_DESTINATION + backgammonSession.getId(), endEvent);
+
+            // simpMessagingTemplate.convertAndSend(BACKGAMMON_SESSION_TOPIC_DESTINATION + backgammonSession.getId() + "/scoreBoard", scoreBoard);
+
             return;
         }
 
@@ -138,6 +139,7 @@ public class BackgammonSessionService {
         if (currentMatch.isGameOver()) {
             startNew(backgammonSession);
         }
+
     }
 
     private Backgammon startNew(BackgammonSession backgammonSession) {
@@ -148,8 +150,34 @@ public class BackgammonSessionService {
 
         backgammonSessionRepository.save(backgammonSession);
 
+        BackgammonSessionEvent startEvent = BackgammonSessionEvent.start(backgammonSession);
+        simpMessagingTemplate.convertAndSend(BACKGAMMON_SESSION_TOPIC_DESTINATION + backgammonSession.getId(), startEvent);
+
         return backgammon;
-        // notify table (GameSessionEvent)
-        // simpMessagingTemplate.convertAndSend(BACKGAMMON_SESSION_TOPIC_DESTINATION + backgammonSession.getId(), backgammonSession.getAway());
+    }
+
+    public void quit(@Nonnull String backgammonSessionId, @Nonnull Player player) {
+        BackgammonSession backgammonSession = get(backgammonSessionId);
+
+        if (backgammonSession.getStatus().equals(BackgammonSessionStatus.ENDED)) {
+            return;
+        }
+
+        if (player.equals(backgammonSession.getHome())) {
+            backgammonSession.setHome(null);
+        }
+        else if (player.equals(backgammonSession.getAway())) {
+            backgammonSession.setAway(null);
+        }
+        backgammonSession.setStatus(BackgammonSessionStatus.WAITING_OPPONENT);
+
+        if (Objects.nonNull(backgammonSession.getCurrentMatch())) {
+            backgammonSession.getCurrentMatch().quitPlayer(player);
+        }
+
+        backgammonSessionRepository.save(backgammonSession);
+
+        BackgammonSessionEvent quitEvent = BackgammonSessionEvent.quit(backgammonSession);
+        simpMessagingTemplate.convertAndSend(BACKGAMMON_SESSION_TOPIC_DESTINATION + backgammonSession.getId(), quitEvent);
     }
 }

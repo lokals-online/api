@@ -42,7 +42,7 @@ public class Card {
         return Arrays.stream(values())
                 .map(CardType::packOf)
                 .flatMap(Collection::stream)
-                .limit(20)
+                .limit(52)
                 .toList();
     }
 

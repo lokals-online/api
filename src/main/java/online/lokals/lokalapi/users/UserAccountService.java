@@ -26,6 +26,15 @@ public class UserAccountService implements UserDetailsService {
         }
     }
 
+    public UserDetails loadUserById(@Nonnull String id) {
+        try {
+            return userService.findById(id);
+        }
+        catch (ResourceNotFoundException e) {
+            throw new UsernameNotFoundException(e.getMessage(), e);
+        }
+    }
+
     public boolean existsByUsername(@Nonnull String username) {
         return userService.existsByUsername(username);
     }

@@ -1,12 +1,20 @@
 package online.lokals.lokalapi.table;
 
-import jakarta.annotation.Nonnull;
+import jakarta.annotation.Generated;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import online.lokals.lokalapi.lokal.Lokal;
+import online.lokals.lokalapi.game.GameRequest;
+import online.lokals.lokalapi.game.GameSession;
+import online.lokals.lokalapi.users.User;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -17,23 +25,23 @@ public class Table {
     @Id
     private String id;
 
-    private String name;
+    private User owner;
 
-    private String lokalId;
+    private Set<User> users;
 
-    private String gameId;
+    private GameSession gameSession;
 
-    public Table(@Nonnull String name, @Nonnull Lokal lokal, @Nonnull String gameId) {
-        this.name = name;
-        this.lokalId = lokal.getId();
-        this.gameId = gameId;
+    public Table(User owner) {
+        this.owner = owner;
+        this.users = new HashSet<>();
+        this.users.add(owner);
     }
 
-    public Table(@Nonnull Lokal lokal) {
-        this.lokalId = lokal.getId();
+    public void addUser(User user) {
+        this.users.add(user);
     }
 
-    public String getName() {
-        return name == null ? "#" + this.id : name;
+    public void removeUser(User user) {
+        this.users.remove(user);
     }
 }

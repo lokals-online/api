@@ -1,8 +1,10 @@
 package online.lokals.lokalapi.security;
 
 import lombok.AllArgsConstructor;
+import online.lokals.lokalapi.users.User;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -20,6 +22,11 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
 
+import static online.lokals.lokalapi.config.LokalConfiguration.LOKAL_USER_ID_HEADER;
+import static online.lokals.lokalapi.config.LokalConfiguration.LOKAL_USER_TOKEN_HEADER;
+import static online.lokals.lokalapi.users.User.OYUNCU_ROLE;
+import static online.lokals.lokalapi.users.User.USER_ROLE;
+
 @EnableWebSecurity
 @Configuration
 @AllArgsConstructor
@@ -33,13 +40,17 @@ public class WebConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         // @formatter:off
         http
-                .authorizeHttpRequests((authorize) -> authorize
-                        .requestMatchers("/register").permitAll()
-                        .requestMatchers("/login").permitAll()
+                .authorizeHttpRequests((authorize) -> 
+                    authorize
                         .requestMatchers(("/lokal-ws/**")).permitAll()
-                        .anyRequest().authenticated()
+                        .requestMatchers("/chirak/hello", "/chirak/login").permitAll()
+                        .requestMatchers("/chirak/register").hasAuthority(OYUNCU_ROLE.getAuthority())
+                        .requestMatchers("/chirak/table/**").hasAnyAuthority(OYUNCU_ROLE.getAuthority(), USER_ROLE.getAuthority())
+                        // .requestMatchers("/pishti/**").hasAnyAuthority(OYUNCU_ROLE.getAuthority(), USER_ROLE.getAuthority())
+                        .anyRequest()
+                        .authenticated()
                 )
-                .csrf().disable()
+                .csrf(csrf -> csrf.disable())
                 .cors(Customizer.withDefaults())
                 .sessionManagement((session) -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(lokalTokenFilter, UsernamePasswordAuthenticationFilter.class);
@@ -47,13 +58,16 @@ public class WebConfig {
         return http.build();
     }
 
+    // configuration.setAllowedOrigins(List.of("https://dfbd-194-0-207-32.ngrok-free.app"));
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowCredentials(true);
-        configuration.setAllowedOrigins(List.of("http://localhost:19006", "http://192.168.2.27:8080"));
+        configuration.setAllowedOrigins(List.of("http://localhost:19006"));
         configuration.setAllowedMethods(List.of("GET","POST"));
-        configuration.setAllowedHeaders(List.of("authorization", "content-type"));
+        configuration.setExposedHeaders(List.of(LOKAL_USER_ID_HEADER, LOKAL_USER_TOKEN_HEADER));
+        configuration.setAllowedHeaders(List.of("Authorization", "content-type", LOKAL_USER_ID_HEADER, LOKAL_USER_TOKEN_HEADER));
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;

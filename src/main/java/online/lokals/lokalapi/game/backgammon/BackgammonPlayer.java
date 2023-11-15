@@ -17,8 +17,10 @@ public class BackgammonPlayer {
 
     private static final Map<Integer, Integer> NORMAL_SETUP = Map.of(5, 5, 7, 3, 12, 5, 23, 2);
     private static final Map<Integer, Integer> PICKING_SETUP = Map.of(5, 2, 15, 2, 23, 2);
+    private static final Map<Integer, Integer> PICKING_2_SETUP = Map.of(0, 3);
+    private static final Map<Integer, Integer> PICKING_3_SETUP = Map.of(0, 3, 20, 3);
 
-    private static final Map<Integer, Integer> INITIAL_SETUP = PICKING_SETUP;
+    private static final Map<Integer, Integer> INITIAL_SETUP = NORMAL_SETUP;
 
     @JsonIgnore
     private Player player;

@@ -1,6 +1,6 @@
-package online.lokals.lokalapi.game.pishti;
+package online.lokals.lokalapi.game.pishti.event;
 
-import lombok.Getter;
+import online.lokals.lokalapi.game.pishti.Card;
 
 public record PishtiEvent(String id, String type, Object payload) {
 
@@ -12,3 +12,4 @@ public record PishtiEvent(String id, String type, Object payload) {
         return new PishtiEvent(pishtiId, "CHANGE_TURN", changedTurn);
     }
 }
+

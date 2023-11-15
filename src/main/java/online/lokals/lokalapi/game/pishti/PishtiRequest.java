@@ -16,6 +16,5 @@ public class PishtiRequest {
 
     private PishtiSettings settings;
 
-}
 
-record PishtiSettings(int raceTo, @Nullable Integer timeLimit) {}
+}

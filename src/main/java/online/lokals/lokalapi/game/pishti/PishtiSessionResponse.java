@@ -19,17 +19,17 @@ public class PishtiSessionResponse {
     private long homeScore;
     private long awayScore;
 
-    public PishtiSessionResponse(PishtiSession pishtiSession, String currentPlayerName) {
+    public PishtiSessionResponse(PishtiSession pishtiSession, Player player) {
         this.id = pishtiSession.getId();
         this.home = pishtiSession.getHome();
         this.away = pishtiSession.getAway();
         this.settings = pishtiSession.getSettings();
         if (Objects.equals(pishtiSession.getStatus(), PishtiSessionStatus.STARTED)) {
             Pishti pishti = pishtiSession.getMatches().get(pishtiSession.getMatches().size() - 1);
-            this.currentMatch = new PishtiResponse(pishti, currentPlayerName);
+            this.currentMatch = new PishtiResponse(pishti, player);
 
-            this.homeScore = pishtiSession.getScoreBoard().getOrDefault(home.getUsername(), 0L);
-            this.awayScore = pishtiSession.getScoreBoard().getOrDefault(away.getUsername(), 0L);
+            this.homeScore = pishtiSession.getHomeScore();
+            this.awayScore = pishtiSession.getAwayScore();
         }
         this.status = pishtiSession.getStatus().name();
     }

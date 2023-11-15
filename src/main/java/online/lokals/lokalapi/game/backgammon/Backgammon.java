@@ -14,8 +14,6 @@ import org.springframework.data.mongodb.core.mapping.MongoId;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.springframework.data.repository.util.ClassUtils.ifPresent;
-
 @Slf4j
 @NoArgsConstructor
 @Getter
@@ -53,10 +51,12 @@ public class Backgammon implements Game {
         this.turns = List.of(new Turn(firstPlayer));
     }
 
-    public Backgammon(Player firstPlayer, Player secondPlayer, Integer[] dices) {
+    public Backgammon(Player firstPlayer, Player secondPlayer, Integer[] dices, @Nullable String turnPlayerId) {
         this.firstPlayer = new BackgammonPlayer(firstPlayer);
         this.secondPlayer = new BackgammonPlayer(secondPlayer);
-        this.turns = List.of(Turn.first(firstPlayer, dices));
+        
+        var turnPlayer = ((turnPlayerId == null) || (Objects.equals(turnPlayerId, firstPlayer.getId()))) ? firstPlayer : secondPlayer;
+        this.turns = List.of(Turn.first(turnPlayer, dices));
     }
 
     @Nonnull
@@ -217,5 +217,14 @@ public class Backgammon implements Game {
         }
 
         return moves;
+    }
+
+    public void quitPlayer(Player player) {
+        if (firstPlayer.getPlayer().equals(player)) {
+            firstPlayer.setPlayer(null);
+        }
+        else {
+            secondPlayer.setPlayer(null);
+        }
     }
 }

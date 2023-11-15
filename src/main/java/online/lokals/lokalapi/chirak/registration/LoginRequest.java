@@ -1,4 +1,4 @@
-package online.lokals.lokalapi.login;
+package online.lokals.lokalapi.chirak.registration;
 
 import jakarta.annotation.Nonnull;
 

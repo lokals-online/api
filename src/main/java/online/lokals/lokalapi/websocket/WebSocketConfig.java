@@ -1,4 +1,4 @@
-package online.lokals.lokalapi.config;
+package online.lokals.lokalapi.websocket;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Configuration;
@@ -29,8 +29,9 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/lokal-ws")
-                .setAllowedOrigins("http://localhost:19006", "http://192.168.2.27:8080")
-                .withSockJS();
+                .setAllowedOrigins("http://localhost:19006")
+                .setAllowedOriginPatterns()
+               .withSockJS();
     }
 
     @Override
@@ -45,10 +46,15 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
             @Override
             public Message<?> preSend(Message<?> message, MessageChannel channel) {
                 StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
-                if (StompCommand.CONNECT.equals(accessor.getCommand())) {
+                if (accessor != null && StompCommand.CONNECT.equals(accessor.getCommand())) {
+
+                    // TODO: secure connection with {login} and {passcode}!
+
 //                    Authentication user =  ; // access authentication header(s)
                     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
                     accessor.setUser(authentication);
+
+//                    log.info(authentication.getName());
                 }
                 return message;
             }

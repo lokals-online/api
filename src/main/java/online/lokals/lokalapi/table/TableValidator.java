@@ -27,12 +27,12 @@ public class TableValidator implements Validator {
 
         CreateTableRequest request = (CreateTableRequest) obj;
 
-        String gameId = request.getGameId();
-        if (!Objects.equals(gameId, "backgammon")) {
+        String gameKey = request.getGameRequest().getGameKey();
+        if (!Objects.equals(gameKey, "tavla")) {
             errors.rejectValue(
                     "gameId",
                     "invalid",
-                    messageSource.getMessage("createTableRequest.gameId.invalid", new String[] {gameId}, LocaleContextHolder.getLocale()));
+                    messageSource.getMessage("createTableRequest.gameId.invalid", new String[] {gameKey}, LocaleContextHolder.getLocale()));
         }
     }
 

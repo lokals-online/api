@@ -1,21 +1,34 @@
 package online.lokals.lokalapi.users;
 
 import jakarta.annotation.Nonnull;
-import lombok.RequiredArgsConstructor;
+import jakarta.annotation.Nullable;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import online.lokals.lokalapi.exception.ResourceNotFoundException;
 import online.lokals.lokalapi.game.Player;
 import online.lokals.lokalapi.lokal.LokalService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.util.HashSet;
+import java.util.Set;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class UserService {
 
     private final UserRepository userRepository;
 
     private final LokalService lokalService;
+
+//    @Getter
+//    private final Set<Long> registrationPool;
+
+    public UserService(@Autowired UserRepository userRepository, @Autowired LokalService lokalService) {
+        this.userRepository = userRepository;
+        this.lokalService = lokalService;
+//        this.registrationPool = new HashSet<>();
+    }
 
     public User findById(@Nonnull String id) throws ResourceNotFoundException {
         return userRepository.findById(id)
@@ -35,7 +48,7 @@ public class UserService {
 
         assert user.getId() != null;
 
-        lokalService.createLokal(username, user);
+//        lokalService.createLokal(username, user);
 
         return user;
     }
@@ -54,8 +67,4 @@ public class UserService {
         return userRepository.existsByUsername(username);
     }
 
-    public Player findPlayerById(String playerId) {
-//        return findById(playerId).toPlayer();
-        return new Player("edfafa", "username");
-    }
 }

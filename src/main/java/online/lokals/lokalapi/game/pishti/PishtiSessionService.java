@@ -1,15 +1,17 @@
 package online.lokals.lokalapi.game.pishti;
 
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import online.lokals.lokalapi.game.Player;
-import online.lokals.lokalapi.users.User;
+import online.lokals.lokalapi.game.backgammon.event.BackgammonSessionEvent;
 import online.lokals.lokalapi.users.UserService;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -19,38 +21,37 @@ import java.util.Objects;
 @RequiredArgsConstructor
 public class PishtiSessionService {
 
+    private static final String PISHTI_SESSION_TOPIC_DESTINATION = "/topic/session/pishti/";
+
     private final SimpMessagingTemplate simpMessagingTemplate;
 
     private final PishtiSessionRepository pishtiSessionRepository;
 
     private final PishtiService pishtiService;
 
-    private final UserService userService;
 
     List<PishtiSession> availableSessions() {
         return pishtiSessionRepository.findPishtiSessionByStatus(PishtiSessionStatus.WAITING);
     }
 
-    String create(@Nonnull Player homePlayer, PishtiRequest pishtiRequest) {
-        Player away = null;
-        if (Objects.nonNull(pishtiRequest.getOpponent())) {
-            User opponent = userService.findByUsername(pishtiRequest.getOpponent());
-            away = opponent.toPlayer();
-        }
+    public PishtiSession create(
+            @Nonnull String tableId,
+            @Nonnull Player homePlayer,
+            @Nullable Player awayPlayer,
+            Map<String, Object> gameSettings
+    ) {
 
-        PishtiSession pishtiSession = new PishtiSession(homePlayer, away, pishtiRequest.getSettings());
+        PishtiSession pishtiSession = new PishtiSession(tableId, homePlayer, awayPlayer, new PishtiSettings(gameSettings));
 
-        pishtiSessionRepository.save(pishtiSession);
-
-        return pishtiSession.getId();
+        return pishtiSessionRepository.save(pishtiSession);
     }
 
-    PishtiSession get(@Nonnull String pishtiSessionId) {
+    public PishtiSession get(@Nonnull String pishtiSessionId) {
         return pishtiSessionRepository.findById(pishtiSessionId).orElseThrow();
     }
 
     @Transactional
-    public void setOpponent(@Nonnull String pishtiSessionId, Player opponentPlayer) {
+    public void sit(@Nonnull String pishtiSessionId, Player opponentPlayer) {
         PishtiSession pishtiSession = pishtiSessionRepository.findById(pishtiSessionId).orElseThrow();
 
         if (Objects.nonNull(pishtiSession.getAway())) {
@@ -66,12 +67,14 @@ public class PishtiSessionService {
         PishtiSession pishtiSession = get(pishtiSessionId);
 
         // check total wins
-        Map<String, Long> scoreBoard = pishtiSession.getScoreBoard();
+        int raceTo = pishtiSession.getSettings().getRaceTo();
 
-        if (scoreBoard.containsValue((long) pishtiSession.getSettings().raceTo())) {
+        if (raceTo == pishtiSession.getHomeScore() || raceTo == pishtiSession.getAwayScore()) {
             pishtiSession.setStatus(PishtiSessionStatus.ENDED);
 
             pishtiSessionRepository.save(pishtiSession);
+
+            simpMessagingTemplate.convertAndSend(PISHTI_SESSION_TOPIC_DESTINATION + pishtiSession.getId(), pishtiSession);
             return;
         }
 
@@ -90,9 +93,7 @@ public class PishtiSessionService {
 
         pishtiSessionRepository.save(pishtiSession);
 
-        // notify table (GameSessionEvent)
-        simpMessagingTemplate.convertAndSend("/topic/" + pishtiSession.getId(), pishtiSession.getAway());
+        // notify table (new match)
+        simpMessagingTemplate.convertAndSend(PISHTI_SESSION_TOPIC_DESTINATION + pishtiSession.getId(), pishtiSession);
     }
 }
-
-record PishtiPlayRequest(@Nonnull Card card) {}

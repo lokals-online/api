@@ -4,6 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import online.lokals.lokalapi.game.GameRequest;
+import online.lokals.lokalapi.users.User;
 import org.springframework.util.StringUtils;
 
 @Getter
@@ -12,12 +14,8 @@ import org.springframework.util.StringUtils;
 @AllArgsConstructor
 public class CreateTableRequest {
 
-    private String name;
+    private User user;
 
-    private String gameId;
-
-    public boolean hasName() {
-        return StringUtils.hasText(name);
-    }
+    private GameRequest gameRequest;
 
 }

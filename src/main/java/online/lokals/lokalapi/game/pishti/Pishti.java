@@ -20,7 +20,7 @@ import java.util.*;
 @Document("pishti")
 public class Pishti {
 
-    private static final int TARGET_SCORE = 51;
+    private static final int TARGET_SCORE = 11;
 
     @MongoId
     private String id;
@@ -65,7 +65,7 @@ public class Pishti {
             // also note that there is no else condition for turn.
             // because previous last turn indicates the previous dealer.
             // then first turn is the previous dealer for the new series
-            this.turn = secondPlayer.getPlayerUsername();
+            this.turn = secondPlayer.getPlayer().getId();
         }
 
         this.setStatus(PishtiStatus.STARTED);
@@ -97,7 +97,7 @@ public class Pishti {
     }
 
     void play(@Nonnull String playerId, @Nonnull Card card) {
-        PishtiPlayer player = getPlayer(playerId);
+        PishtiPlayer player = getPlayer(playerId).orElseThrow();
 
         // remove from hand
         player.played(card);
@@ -113,10 +113,10 @@ public class Pishti {
             log.trace("the last one is: {}", this.stack.get(this.stack.size()-1));
             if ((this.stack.size() % 2) == 0) {
                 // if stack elements count is even, then the last player is the last capture
-                getPlayer(this.turn).capture(this.stack);
+                getPlayer(this.turn).get().capture(this.stack);
             }
             else {
-                getOpponent(this.turn).capture(this.stack);
+                getOpponent(this.turn).get().capture(this.stack);
             }
             this.stack.clear();
         }
@@ -140,7 +140,7 @@ public class Pishti {
 
         if (isPishti) {
             // player add pishti
-            getPlayer(turn).pishti(this.stack.get(0), this.stack.get(1));
+            getPlayer(turn).get().pishti(this.stack.get(0), this.stack.get(1));
 
             // clear stack
             this.stack.clear();
@@ -153,7 +153,7 @@ public class Pishti {
     }
 
     public boolean checkCapture() {
-        if (this.stack.size() > 2) {
+        if (this.stack.size() >= 2) {
             int size = this.stack.size();
             Card lastCard = this.stack.get(size - 1);
 
@@ -161,7 +161,7 @@ public class Pishti {
 
             if (isCapture) {
                 // player add capture
-                getPlayer(turn).capture(this.stack);
+                getPlayer(turn).get().capture(this.stack);
                 // clear stack
                 this.stack.clear();
                 return true;
@@ -190,12 +190,12 @@ public class Pishti {
     }
 
     public String changeTurn() {
-        PishtiPlayer currentPlayer = getPlayer(turn);
-        String opponent = Objects.requireNonNull(getOpponent(currentPlayer.getPlayer().getUsername())).getPlayerUsername();
+        
+        PishtiPlayer opponent = getOpponent(this.turn).orElseThrow(IllegalStateException::new);
 
         log.trace("changing turn from[{}] to[{}]", turn, opponent);
 
-        this.turn = opponent;
+        this.turn = opponent.getPlayer().getId();
         return this.turn;
     }
 
@@ -210,19 +210,17 @@ public class Pishti {
         }
     }
 
-    public PishtiPlayer getPlayer(@Nonnull String username) {
+    public Optional<PishtiPlayer> getPlayer(@Nonnull String playerId) {
         return getPlayers().stream()
-                .filter(player -> player.getPlayerUsername().equals(username))
-                .findFirst()
-                .orElseThrow();
+                .filter(player -> player.getPlayer().getId().equals(playerId))
+                .findFirst();
     }
 
     @Nullable
-    public PishtiPlayer getOpponent(@Nonnull String username) {
+    public Optional<PishtiPlayer> getOpponent(@Nonnull String playerId) {
         return getPlayers().stream()
-                .filter(player -> !player.getPlayerUsername().equals(username))
-                .findFirst()
-                .orElse(null);
+                .filter(player -> !player.getPlayer().getId().equals(playerId))
+                .findFirst();
     }
 
     // TODO: check if this.cards has enough cards!
