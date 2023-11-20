@@ -34,9 +34,6 @@ import static online.lokals.lokalapi.users.User.USER_ROLE;
 @AllArgsConstructor
 public class WebConfig {
 
-    // @Value("${lokal}")
-    // private String[] allowedOrigins;
-
     private final LokalTokenFilter lokalTokenFilter;
 
     private final UserDetailsService userDetailsService;

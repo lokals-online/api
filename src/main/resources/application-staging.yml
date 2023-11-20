@@ -1,0 +1,22 @@
+server:
+  port: 8082
+
+spring:
+  data:
+    mongodb:
+      host: mongodb
+      port: 27017
+
+jwt:
+  validityInDays: 7
+  secret: parolaisaret
+
+logging:
+  level:
+    org:
+      springframework:
+        web: warn
+        security: warn
+    online.lokals.lokalapi.game:
+      backgammon: warn
+      pishti: warn

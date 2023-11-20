@@ -1,27 +1,27 @@
 package online.lokals.lokalapi.security;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
-import online.lokals.lokalapi.users.User;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.stereotype.Component;
-
 import java.time.Duration;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.stereotype.Component;
+
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
+import online.lokals.lokalapi.users.User;
+
 @Component
 public class LokalTokenManager {
 
-    @Value("${jwt.secret}")
-    private String jwtSecret;
+    // @Value("${jwt.secret:parolaisaret}")
+    private String jwtSecret = "parolaisaret";
 
-    @Value("${jwt.validityInDays:1}")
-    private Integer validityInDays;
-
+    // @Value("${jwt.validityInDays:1}")
+    private Integer validityInDays = 7;
+    
     public String generate(UserDetails userDetails) {
 
         final long now = System.currentTimeMillis();

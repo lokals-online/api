@@ -2,7 +2,6 @@ jwt:
   secret: parolaisaret
   validityInDays: 365
 
-
 logging:
   level:
     org:
