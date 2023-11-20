@@ -2,12 +2,21 @@ server:
   port: 8082
 
 spring:
-  jpa:
-    open-in-view: false
-  jackson:
-    serialization:
-      fail-on-empty-beans: false
+  data:
+    mongodb:
+      host: mongodb
+      port: 27017
+
+logging:
+  level:
+    org:
+      springframework:
+        web: warn
+        security: warn
+    online.lokals.lokalapi.game:
+      backgammon: warn
+      pishti: warn
 
 jwt:
-  validityInDays: 7
-  secret: parolaisaret
+  secret: ${JWT_SECRET:parolaisaret}
+  validityInDays: ${JWT_VALIDITY:365}
