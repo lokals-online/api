@@ -1,19 +1,15 @@
 package online.lokals.lokalapi.config;
 
+import java.util.Locale;
+
 import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.support.ReloadableResourceBundleMessageSource;
-import org.springframework.messaging.handler.invocation.HandlerMethodArgumentResolver;
-import org.springframework.security.web.method.annotation.AuthenticationPrincipalArgumentResolver;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 import org.springframework.web.servlet.LocaleResolver;
-import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.i18n.FixedLocaleResolver;
-
-import java.util.List;
-import java.util.Locale;
 
 @Configuration
 public class LokalConfiguration implements WebMvcConfigurer {

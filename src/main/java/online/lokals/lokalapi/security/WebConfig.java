@@ -2,6 +2,8 @@ package online.lokals.lokalapi.security;
 
 import lombok.AllArgsConstructor;
 import online.lokals.lokalapi.users.User;
+
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -32,6 +34,9 @@ import static online.lokals.lokalapi.users.User.USER_ROLE;
 @AllArgsConstructor
 public class WebConfig {
 
+    // @Value("${lokal}")
+    // private String[] allowedOrigins;
+
     private final LokalTokenFilter lokalTokenFilter;
 
     private final UserDetailsService userDetailsService;
@@ -58,12 +63,11 @@ public class WebConfig {
         return http.build();
     }
 
-    // configuration.setAllowedOrigins(List.of("https://dfbd-194-0-207-32.ngrok-free.app"));
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowCredentials(true);
-        configuration.setAllowedOrigins(List.of("http://localhost:19006"));
+        configuration.setAllowedOrigins(List.of("**"));
         configuration.setAllowedMethods(List.of("GET","POST"));
         configuration.setExposedHeaders(List.of(LOKAL_USER_ID_HEADER, LOKAL_USER_TOKEN_HEADER));
         configuration.setAllowedHeaders(List.of("Authorization", "content-type", LOKAL_USER_ID_HEADER, LOKAL_USER_TOKEN_HEADER));
