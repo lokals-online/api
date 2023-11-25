@@ -1,6 +1,9 @@
 package online.lokals.lokalapi.websocket;
 
 import lombok.extern.slf4j.Slf4j;
+
+import java.util.List;
+
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
@@ -29,8 +32,8 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/lokal-ws")
-                .setAllowedOrigins("http://localhost:19006")
-                .setAllowedOriginPatterns()
+                    .setAllowedOriginPatterns("*.lokals.online*", "*localhost*")
+                // .setAllowedOrigins("http://localhost:19006")
                .withSockJS();
     }
 

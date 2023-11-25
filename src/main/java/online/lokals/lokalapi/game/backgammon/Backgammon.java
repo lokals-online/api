@@ -95,7 +95,7 @@ public class Backgammon implements Game {
 
         if (players.length != 2) return null;
 
-        if (Objects.equals(players[1].getPlayer().getId(), playerId)) {
+        if (Objects.equals(players[1].getId(), playerId)) {
             return players[0];
         }
         else {
@@ -143,7 +143,7 @@ public class Backgammon implements Game {
         turn.addMove(move);
 
         if (currentPlayer.hasFinished()) {
-            this.winner = currentPlayer.getPlayer();
+            this.winner = currentPlayer;
             this.mars = getOpponent(currentPlayer.getId()).totalCheckersCount() == 15;
             this.status = BackgammonStatus.ENDED;
         }
@@ -158,7 +158,7 @@ public class Backgammon implements Game {
     }
 
     public Turn changeTurn() {
-        Turn turn = firstPlayer.getId().equals(Objects.requireNonNull(currentTurn()).getPlayerId()) ? new Turn(secondPlayer.getPlayer()) : new Turn(firstPlayer.getPlayer());
+        Turn turn = firstPlayer.getId().equals(Objects.requireNonNull(currentTurn()).getPlayerId()) ? new Turn(secondPlayer) : new Turn(firstPlayer);
         this.turns.add(turn);
 
         return turn;
@@ -220,11 +220,11 @@ public class Backgammon implements Game {
     }
 
     public void quitPlayer(Player player) {
-        if (firstPlayer.getPlayer().equals(player)) {
-            firstPlayer.setPlayer(null);
+        if (firstPlayer.equals(player)) {
+            firstPlayer = null;
         }
         else {
-            secondPlayer.setPlayer(null);
+            secondPlayer = null;
         }
     }
 }

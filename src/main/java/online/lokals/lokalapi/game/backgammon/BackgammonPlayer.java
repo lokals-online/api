@@ -1,6 +1,5 @@
 package online.lokals.lokalapi.game.backgammon;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -13,7 +12,7 @@ import java.util.Map;
 @NoArgsConstructor
 @Getter
 @Setter
-public class BackgammonPlayer {
+public class BackgammonPlayer extends Player {
 
     private static final Map<Integer, Integer> NORMAL_SETUP = Map.of(5, 5, 7, 3, 12, 5, 23, 2);
     private static final Map<Integer, Integer> PICKING_SETUP = Map.of(5, 2, 15, 2, 23, 2);
@@ -22,15 +21,13 @@ public class BackgammonPlayer {
 
     private static final Map<Integer, Integer> INITIAL_SETUP = NORMAL_SETUP;
 
-    @JsonIgnore
-    private Player player;
-
     private Map<Integer, Integer> checkers;
 
     private int hitCheckers;
 
     public BackgammonPlayer(Player player) {
-        this.player = player;
+        super(player.getId(), player.getUsername(), player.isAnonymous());
+        
         this.checkers = INITIAL_SETUP;
         this.hitCheckers = 0;
     }
@@ -88,7 +85,7 @@ public class BackgammonPlayer {
     public void checkHit(Integer to) {
         int targetIndex = 23 - to;
         Integer checkersCount = getCheckers(targetIndex);
-        log.trace("checking hit possibility for player {}. hit is empty: {}", this.getPlayer(), checkersCount == 0);
+        log.trace("checking hit possibility for player {}. hit is empty: {}", this, checkersCount == 0);
         if (checkersCount > 0) {
             log.trace("hit index: {}", targetIndex);
             checkers.remove(targetIndex);
@@ -108,17 +105,8 @@ public class BackgammonPlayer {
         return checkers.keySet().stream().anyMatch(pointIndex -> (pointIndex+1) > dice);
     }
 
-    public String getUsername() {
-        return this.getPlayer().getUsername();
-    }
-
-    public String getId() {
-        return this.getPlayer().getId();
-    }
-
     @Override
     public String toString() {
-        return "BackgammonPlayer{" +
-                "p=[" + player + "], hit=[" + hitCheckers + "]}";
+        return super.toString();
     }
 }
