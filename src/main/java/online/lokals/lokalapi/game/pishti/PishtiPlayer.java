@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import online.lokals.lokalapi.game.Player;
+import online.lokals.lokalapi.game.card.Card;
 
 import java.util.*;
 

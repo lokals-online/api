@@ -28,9 +28,8 @@ public class ChirakTableController {
 
     @GetMapping
     public List<Table> tables(@AuthenticationPrincipal User currentUser) {
-        var tables = tableService.getAllTables();
 
-        return tables;
+        return tableService.getAllTables();
     }
 
     @PostMapping

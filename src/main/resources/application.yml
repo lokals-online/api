@@ -1,12 +1,6 @@
 server:
   port: 8082
 
-spring:
-  data:
-    mongodb:
-      host: mongodb
-      port: 27017
-
 logging:
   level:
     org:

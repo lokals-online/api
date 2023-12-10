@@ -13,7 +13,6 @@ import lombok.RequiredArgsConstructor;
 import online.lokals.lokalapi.game.pishti.PishtiResponse;
 import online.lokals.lokalapi.game.pishti.PishtiService;
 import online.lokals.lokalapi.game.pishti.PishtiSession;
-import online.lokals.lokalapi.game.pishti.PishtiSessionResponse;
 import online.lokals.lokalapi.game.pishti.PishtiSessionService;
 import online.lokals.lokalapi.users.User;
 

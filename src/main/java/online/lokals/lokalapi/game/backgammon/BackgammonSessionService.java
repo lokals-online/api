@@ -118,10 +118,9 @@ public class BackgammonSessionService {
         BackgammonSession backgammonSession = get(backgammonSessionId);
 
         // check total wins
-        Map<String, Integer> scoreBoard = backgammonSession.getScoreBoard();
+        // Map<String, Integer> scoreBoard = backgammonSession.getScoreBoard();
 
-        if (!backgammonSession.getStatus().equals(BackgammonSessionStatus.ENDED) &&
-                scoreBoard.containsValue(backgammonSession.getSettings().getRaceTo())) {
+        if (backgammonSession.hasEnded()) {
 
             backgammonSession.setStatus(BackgammonSessionStatus.ENDED);
             backgammonSessionRepository.save(backgammonSession);

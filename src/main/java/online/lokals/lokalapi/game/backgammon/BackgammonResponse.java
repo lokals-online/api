@@ -23,7 +23,8 @@ public class BackgammonResponse {
         this.turn = backgammon.currentTurn();
 
         if (backgammon.isGameOver()) {
-            this.report = new BackgammonReport(backgammon.getWinner().getId(), backgammon.isMars(), backgammon.getStatus());
+            var mars = backgammon.getMultiply() == 2;
+            this.report = new BackgammonReport(backgammon.getWinner().getId(), mars, backgammon.getStatus());
         }
         else {
             this.report = new BackgammonReport(null, null, backgammon.getStatus());

@@ -22,7 +22,6 @@ public class BackgammonService {
 
     private final BackgammonRepository backgammonRepository;
 
-
     Backgammon newMatchForSession(BackgammonSession backgammonSession) {
         Integer[] firstDices = {backgammonSession.getHomeFirstDice(), backgammonSession.getAwayFirstDice()};
         String winnerId = (backgammonSession.getCurrentMatch() != null && backgammonSession.getCurrentMatch().getWinner() != null) ? 

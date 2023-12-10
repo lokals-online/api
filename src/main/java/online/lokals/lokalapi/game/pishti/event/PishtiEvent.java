@@ -1,6 +1,6 @@
 package online.lokals.lokalapi.game.pishti.event;
 
-import online.lokals.lokalapi.game.pishti.Card;
+import online.lokals.lokalapi.game.card.Card;
 
 public record PishtiEvent(String id, String type, Object payload) {
 

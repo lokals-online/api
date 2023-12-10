@@ -1,35 +1,30 @@
 package online.lokals.lokalapi.security;
 
-import lombok.AllArgsConstructor;
-import online.lokals.lokalapi.users.User;
+import static online.lokals.lokalapi.config.LokalConfiguration.LOKAL_USER_ID_HEADER;
+import static online.lokals.lokalapi.config.LokalConfiguration.LOKAL_USER_TOKEN_HEADER;
+import static online.lokals.lokalapi.users.User.OYUNCU_ROLE;
+import static online.lokals.lokalapi.users.User.USER_ROLE;
 
-import org.springframework.beans.factory.annotation.Value;
+import java.util.List;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.util.List;
-
-import static online.lokals.lokalapi.config.LokalConfiguration.LOKAL_USER_ID_HEADER;
-import static online.lokals.lokalapi.config.LokalConfiguration.LOKAL_USER_TOKEN_HEADER;
-import static online.lokals.lokalapi.users.User.OYUNCU_ROLE;
-import static online.lokals.lokalapi.users.User.USER_ROLE;
+import lombok.AllArgsConstructor;
 
 @EnableWebSecurity
 @Configuration
@@ -44,7 +39,7 @@ public class WebConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         // @formatter:off
         http
-                .authorizeHttpRequests((authorize) -> 
+                .authorizeHttpRequests((authorize) ->
                     authorize
                         .requestMatchers("/actuator/**").permitAll()
                         .requestMatchers("/lokal-ws/**").permitAll()
@@ -68,9 +63,8 @@ public class WebConfig {
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowCredentials(true);
-        // configuration.setAllowedOrigins(List.of("*"));
         configuration.setAllowedOriginPatterns(List.of("https://*.lokals.online:[*]","http://*.lokals.online:[*]"));
-        configuration.setAllowedMethods(List.of("GET","POST"));
+        configuration.setAllowedMethods(List.of("*"));
         configuration.setExposedHeaders(List.of(LOKAL_USER_ID_HEADER, LOKAL_USER_TOKEN_HEADER));
         configuration.setAllowedHeaders(List.of("Authorization", "content-type", LOKAL_USER_ID_HEADER, LOKAL_USER_TOKEN_HEADER));
 

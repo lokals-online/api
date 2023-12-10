@@ -18,6 +18,7 @@ public class UserAccountService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(@Nonnull String username) throws UsernameNotFoundException {
+
         try {
             return userService.findByUsername(username);
         }

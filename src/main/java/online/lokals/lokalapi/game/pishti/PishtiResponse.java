@@ -5,6 +5,8 @@ import java.util.Optional;
 
 import jakarta.annotation.Nullable;
 import online.lokals.lokalapi.game.Player;
+import online.lokals.lokalapi.game.card.Card;
+import online.lokals.lokalapi.game.pishti.api.PishtiOpponentResponse;
 
 public class PishtiResponse {
 

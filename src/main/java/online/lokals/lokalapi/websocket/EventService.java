@@ -14,18 +14,13 @@ public class EventService {
 
     @EventListener
     public void onDisconnectEvent(SessionDisconnectEvent event) {
-        log.info(event.toString());
+//        log.info(event.toString());
         // TODO notify table!
     }
 
     @EventListener
     public void onConnectEvent(SessionConnectEvent event) {
-        log.info(event.toString());
-    }
-
-    @EventListener
-    public void onConnectEvent(SessionConnectedEvent event) {
-        log.info(event.toString());
+//        log.info(event.toString());
     }
 
 }

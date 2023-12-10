@@ -57,7 +57,7 @@ public class BackgammonSession implements GameSession {
     }
 
     public int getHomeScore() {
-        return ((int) this.getMatches()
+        return this.getMatches()
                 .stream()
                 .filter(backgammon -> {
                     if (Objects.nonNull(backgammon.getWinner()) && backgammon.isGameOver() && Objects.nonNull(this.home)) {
@@ -67,11 +67,12 @@ public class BackgammonSession implements GameSession {
                         return false;
                     }
                 })
-                .count());
+                .map(Backgammon::getMultiply)
+                .reduce(0, Integer::sum);
     }
 
     public int getAwayScore() {
-        return ((int) this.getMatches()
+        return this.getMatches()
                 .stream()
                 .filter(backgammon -> {
                     if (Objects.nonNull(backgammon.getWinner()) && backgammon.isGameOver() && Objects.nonNull(this.away)) {
@@ -81,7 +82,8 @@ public class BackgammonSession implements GameSession {
                         return false;
                     }
                 })
-                .count());
+                .map(Backgammon::getMultiply)
+                .reduce(0, Integer::sum);
     }
 
     public boolean isNotEnded() {
@@ -155,7 +157,7 @@ public class BackgammonSession implements GameSession {
         return LokalGames.BACKGAMMON.getKey();
     }
 
-    @Override
+    // @Override
     public boolean removePlayer(@NotNull String playerId) {
         if (home != null && home.getId().equals(playerId)) {
             home = null;
@@ -166,6 +168,12 @@ public class BackgammonSession implements GameSession {
             return true;
         }
         else return false;
+    }
+
+    public boolean hasEnded() {
+        return getHomeScore() >= this.settings.raceTo || getAwayScore() >= this.settings.raceTo;
+        
+        // scoreBoard.values().stream().anyMatch((Integer i) -> i >= backgammonSession.getSettings().getRaceTo());
     }
 
 }

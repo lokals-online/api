@@ -2,6 +2,7 @@ package online.lokals.lokalapi.game.pishti;
 
 import lombok.Getter;
 import lombok.Setter;
+import online.lokals.lokalapi.game.card.Card;
 
 import java.util.Collection;
 import java.util.Collections;

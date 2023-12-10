@@ -1,9 +1,11 @@
-package online.lokals.lokalapi.game.pishti;
+package online.lokals.lokalapi.game.pishti.api;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import online.lokals.lokalapi.game.card.Card;
+import online.lokals.lokalapi.game.pishti.PishtiPlayer;
 
 import java.util.List;
 

@@ -3,12 +3,8 @@ package online.lokals.lokalapi.game.pishti;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -73,7 +69,7 @@ public class PishtiSession implements GameSession {
         return (this.matches != null && !this.matches.isEmpty()) ? this.matches.get(this.matches.size()-1) : null;
     }
 
-    @Override
+    // @Override
     public int getHomeScore() {
         return ((int) this.getMatches()
                 .stream()
@@ -88,7 +84,7 @@ public class PishtiSession implements GameSession {
                 .count());
     }
 
-    @Override
+    // @Override
     public int getAwayScore() {
         return ((int) this.getMatches()
                 .stream()
@@ -114,7 +110,7 @@ public class PishtiSession implements GameSession {
     //     else return null;
     // }
 
-    @Override
+    // @Override
     public boolean removePlayer(@NotNull String playerId) {
         if (home != null && home.getId().equals(playerId)) {
             home = null;

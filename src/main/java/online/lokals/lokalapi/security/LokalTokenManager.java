@@ -5,6 +5,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
@@ -16,11 +17,11 @@ import online.lokals.lokalapi.users.User;
 @Component
 public class LokalTokenManager {
 
-    // @Value("${jwt.secret:parolaisaret}")
-    private String jwtSecret = "parolaisaret";
+    @Value("${jwt.secret:parolaisaret}")
+    private String jwtSecret;
 
-    // @Value("${jwt.validityInDays:1}")
-    private Integer validityInDays = 7;
+    @Value("${jwt.validityInDays:365}")
+    private Integer validityInDays;
     
     public String generate(UserDetails userDetails) {
 

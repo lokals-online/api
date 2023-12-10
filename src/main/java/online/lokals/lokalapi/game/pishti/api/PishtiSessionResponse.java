@@ -1,8 +1,13 @@
-package online.lokals.lokalapi.game.pishti;
+package online.lokals.lokalapi.game.pishti.api;
 
 import lombok.Getter;
 import lombok.Setter;
 import online.lokals.lokalapi.game.Player;
+import online.lokals.lokalapi.game.pishti.Pishti;
+import online.lokals.lokalapi.game.pishti.PishtiResponse;
+import online.lokals.lokalapi.game.pishti.PishtiSession;
+import online.lokals.lokalapi.game.pishti.PishtiSessionStatus;
+import online.lokals.lokalapi.game.pishti.PishtiSettings;
 
 import java.util.Objects;
 
@@ -27,10 +32,9 @@ public class PishtiSessionResponse {
         if (Objects.equals(pishtiSession.getStatus(), PishtiSessionStatus.STARTED)) {
             Pishti pishti = pishtiSession.getMatches().get(pishtiSession.getMatches().size() - 1);
             this.currentMatch = new PishtiResponse(pishti, player);
-
-            this.homeScore = pishtiSession.getHomeScore();
-            this.awayScore = pishtiSession.getAwayScore();
         }
+        this.homeScore = pishtiSession.getHomeScore();
+        this.awayScore = pishtiSession.getAwayScore();
         this.status = pishtiSession.getStatus().name();
     }
 }

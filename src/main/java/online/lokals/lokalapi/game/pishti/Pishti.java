@@ -8,6 +8,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import online.lokals.lokalapi.game.Player;
+import online.lokals.lokalapi.game.card.Card;
+
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.MongoId;
 
@@ -20,7 +22,7 @@ import java.util.*;
 @Document("pishti")
 public class Pishti {
 
-    private static final int TARGET_SCORE = 11;
+    private static final int TARGET_SCORE = 101;
 
     @MongoId
     private String id;

@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 import online.lokals.lokalapi.game.Player;
 
+import java.util.List;
 import java.util.Objects;
 
 @Getter
@@ -15,6 +16,7 @@ public class BackgammonSessionResponse {
     private Player away;
     private BackgammonSettings settings;
     private BackgammonResponse currentMatch;
+    private List<BackgammonResponse> matches;
     private String status;
     private int homeScore;
     private int awayScore;
@@ -29,9 +31,10 @@ public class BackgammonSessionResponse {
         this.awayFirstDice = backgammonSession.getAwayFirstDice();
         this.settings = backgammonSession.getSettings();
         if (Objects.equals(backgammonSession.getStatus(), BackgammonSessionStatus.STARTED) || 
-            Objects.equals(backgammonSession.getStatus(), BackgammonSessionStatus.ENDED)) {
+        Objects.equals(backgammonSession.getStatus(), BackgammonSessionStatus.ENDED)) {
             Backgammon backgammon = backgammonSession.getMatches().get(backgammonSession.getMatches().size() - 1);
             this.currentMatch = new BackgammonResponse(backgammon);
+            this.matches = backgammonSession.getMatches().stream().map(BackgammonResponse::new).toList();
         }
         this.homeScore = backgammonSession.getHomeScore();
         if (Objects.nonNull(away)) {

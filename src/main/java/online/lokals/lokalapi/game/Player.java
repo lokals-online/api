@@ -16,6 +16,11 @@ public class Player {
         this.username = null;
     }
 
+    public Player(String id, String username) {
+        this.id = id;
+        this.username = username;
+    }
+
     @Override
     public String toString() {
         return "Player[id:" + id + ", u:" + username + "]";

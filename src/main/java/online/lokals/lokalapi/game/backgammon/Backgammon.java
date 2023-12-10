@@ -39,7 +39,7 @@ public class Backgammon implements Game {
 
     private Player winner;
 
-    private boolean mars;
+    private int multiply = 1;
 
     public Backgammon(Player player) {
         this.firstPlayer = new BackgammonPlayer(player);
@@ -144,7 +144,8 @@ public class Backgammon implements Game {
 
         if (currentPlayer.hasFinished()) {
             this.winner = currentPlayer;
-            this.mars = getOpponent(currentPlayer.getId()).totalCheckersCount() == 15;
+            // it should also multiply by 3 when opponent has hit checkers also
+            this.multiply = (byte) (opponent.hasPickedAny() ? 1 : 2);
             this.status = BackgammonStatus.ENDED;
         }
     }

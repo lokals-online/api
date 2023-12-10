@@ -4,7 +4,8 @@ import lombok.Getter;
 
 public enum LokalGames {
     BACKGAMMON("backgammon", "tavla"),
-    PISHTI("pishti", "pişti");
+    PISHTI("pishti", "pişti"),
+    BATAK("batak", "batak");
 
     @Getter
     private final String key;
