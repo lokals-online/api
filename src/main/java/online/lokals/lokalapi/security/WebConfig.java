@@ -63,7 +63,7 @@ public class WebConfig {
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowCredentials(true);
-        configuration.setAllowedOriginPatterns(List.of("https://*.lokals.online:[*]","http://*.lokals.online:[*]"));
+        configuration.setAllowedOriginPatterns(List.of("http://localhost:[*]", "https://*.lokals.online:[*]","http://*.lokals.online:[*]"));
         configuration.setAllowedMethods(List.of("*"));
         configuration.setExposedHeaders(List.of(LOKAL_USER_ID_HEADER, LOKAL_USER_TOKEN_HEADER));
         configuration.setAllowedHeaders(List.of("Authorization", "content-type", LOKAL_USER_ID_HEADER, LOKAL_USER_TOKEN_HEADER));
