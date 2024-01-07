@@ -4,6 +4,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
+import jakarta.annotation.Nullable;
 import lombok.Getter;
 import online.lokals.lokalapi.game.Player;
 import online.lokals.lokalapi.game.batak.*;
@@ -15,6 +16,7 @@ public class BatakResponse {
     private final String id;
     private final String turn;
     private final List<Card> hand;
+    @Nullable
     private final List<Card> availableCards;
     private final BatakBid bid;
     private final List<BatakPlayerResponse> players;
@@ -56,11 +58,18 @@ public class BatakResponse {
                     // player has trump cards
 
                     if (trumpPlayed) {
-                        this.availableCards = this.hand.stream()
-                            .filter((Card card) -> 
-                                card.getType().equals(this.bid.getTrump()) && 
-                                card.getNumber() > winnerMove.getCard().getNumber())
-                            .toList();
+                        if (this.hand.stream().anyMatch(card -> card.getNumber() > winnerMove.getCard().getNumber())) {
+                            this.availableCards = this.hand.stream()
+                                .filter((Card card) ->
+                                    card.getType().equals(this.bid.getTrump()) &&
+                                    card.getNumber() > winnerMove.getCard().getNumber())
+                                .toList();
+                        }
+                        else {
+                            this.availableCards = this.hand.stream()
+                                    .filter(card -> card.getType().equals(this.bid.getTrump()))
+                                    .toList();
+                        }
                     }
                     else {
                         this.availableCards = this.hand.stream().filter((Card card) -> card.getType().equals(this.bid.getTrump())).toList();
@@ -72,7 +81,7 @@ public class BatakResponse {
             }
         }
         else {
-            this.availableCards = Collections.EMPTY_LIST;
+            this.availableCards = null;
         }
     }
 

@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import online.lokals.lokalapi.game.pishti.api.PishtiSessionResponse;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,14 +33,9 @@ public class PishtiSessionService {
         return pishtiSessionRepository.findPishtiSessionByStatus(PishtiSessionStatus.WAITING);
     }
 
-    public PishtiSession create(
-            @Nonnull String tableId,
-            @Nonnull Player homePlayer,
-            @Nullable Player awayPlayer,
-            Map<String, Object> gameSettings
-    ) {
+    public PishtiSession create(@Nonnull Player homePlayer, Map<String, Object> gameSettings) {
 
-        PishtiSession pishtiSession = new PishtiSession(tableId, homePlayer, awayPlayer, new PishtiSettings(gameSettings));
+        PishtiSession pishtiSession = new PishtiSession(homePlayer.getId(), homePlayer, Player.chirak(), new PishtiSettings(gameSettings));
 
         return pishtiSessionRepository.save(pishtiSession);
     }
@@ -52,16 +48,16 @@ public class PishtiSessionService {
     public void sit(@Nonnull String pishtiSessionId, Player opponentPlayer) {
         PishtiSession pishtiSession = pishtiSessionRepository.findById(pishtiSessionId).orElseThrow();
 
-        if (Objects.nonNull(pishtiSession.getAway())) {
+        if (Objects.nonNull(pishtiSession.getAway()) && !pishtiSession.playingWithChirak()) {
             throw new IllegalArgumentException("pishti session[{}] has an away player already!");
         }
 
         pishtiSession.setAway(opponentPlayer);
 
-        createNew(pishtiSession);
+        createNew(pishtiSession, pishtiSession.getHome());
     }
 
-    public void checkScore(@Nonnull String pishtiSessionId) {
+    public void checkScore(@Nonnull String pishtiSessionId, Player currentPlayer) {
         PishtiSession pishtiSession = get(pishtiSessionId);
 
         // check total wins
@@ -72,18 +68,23 @@ public class PishtiSessionService {
 
             pishtiSessionRepository.save(pishtiSession);
 
-            simpMessagingTemplate.convertAndSend(PISHTI_SESSION_TOPIC_DESTINATION + pishtiSession.getId(), pishtiSession);
+            PishtiSessionResponse pishtiSessionResponse = new PishtiSessionResponse(pishtiSession, currentPlayer);
+            simpMessagingTemplate.convertAndSend(PISHTI_SESSION_TOPIC_DESTINATION + pishtiSession.getId(), pishtiSessionResponse);
             return;
         }
 
         // check continuing match
         Pishti currentMatch = pishtiSession.getCurrentMatch();
         if (currentMatch.checkGameEnded()) {
-            createNew(pishtiSession);
+            createNew(pishtiSession, currentPlayer);
+        }
+        else {
+            PishtiSessionResponse pishtiSessionResponse = new PishtiSessionResponse(pishtiSession, currentPlayer);
+            simpMessagingTemplate.convertAndSend(PISHTI_SESSION_TOPIC_DESTINATION + pishtiSession.getId(), pishtiSessionResponse);
         }
     }
 
-    private void createNew(PishtiSession pishtiSession) {
+    private void createNew(PishtiSession pishtiSession, Player currentPlayer) {
         Pishti pishti = pishtiService.newMatch(pishtiSession);
 
         pishtiSession.addMatch(pishti);
@@ -92,6 +93,7 @@ public class PishtiSessionService {
         pishtiSessionRepository.save(pishtiSession);
 
         // notify table (new match)
-        simpMessagingTemplate.convertAndSend(PISHTI_SESSION_TOPIC_DESTINATION + pishtiSession.getId(), pishtiSession);
+        PishtiSessionResponse pishtiSessionResponse = new PishtiSessionResponse(pishtiSession, currentPlayer);
+        simpMessagingTemplate.convertAndSend(PISHTI_SESSION_TOPIC_DESTINATION + pishtiSession.getId(), pishtiSessionResponse);
     }
 }

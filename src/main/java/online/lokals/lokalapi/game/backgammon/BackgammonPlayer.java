@@ -6,6 +6,7 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import online.lokals.lokalapi.game.Player;
 
+import java.util.HashMap;
 import java.util.Map;
 
 @Slf4j
@@ -18,6 +19,7 @@ public class BackgammonPlayer extends Player {
     private static final Map<Integer, Integer> PICKING_SETUP = Map.of(5, 2, 15, 2, 23, 2);
     private static final Map<Integer, Integer> PICKING_2_SETUP = Map.of(0, 2, 12, 2);
     private static final Map<Integer, Integer> PICKING_3_SETUP = Map.of(0, 3, 20, 3);
+    private static final Map<Integer, Integer> PICKING_4_SETUP = Map.of(0, 2);
 
     private static final Map<Integer, Integer> INITIAL_SETUP = NORMAL_SETUP;
 
@@ -28,7 +30,7 @@ public class BackgammonPlayer extends Player {
     public BackgammonPlayer(Player player) {
         super(player.getId(), player.getUsername(), player.isAnonymous());
         
-        this.checkers = INITIAL_SETUP;
+        this.checkers = Map.copyOf(INITIAL_SETUP);
         this.hitCheckers = 0;
     }
 

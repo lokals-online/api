@@ -5,6 +5,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
+import online.lokals.lokalapi.game.batak.event.BatakSessionEvent;
+import online.lokals.lokalapi.game.pishti.PishtiSession;
+import online.lokals.lokalapi.game.pishti.PishtiSettings;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,11 +31,10 @@ public class BatakSessionService {
     private final SimpMessagingTemplate simpMessagingTemplate;
 
     public BatakSession create(
-            @Nonnull String tableId,
             @Nonnull Player player,
             Map<String, Object> gameSettings
     ) {
-        BatakSession batakSession = new BatakSession(tableId, player, new BatakSettings(gameSettings));
+        BatakSession batakSession = new BatakSession(player.getId(), player, new BatakSettings(gameSettings));
 
         return batakSessionRepository.save(batakSession);
     }
@@ -54,11 +56,15 @@ public class BatakSessionService {
 
             batakSession.addMatch(batak);
             batakSession.setStatus(BatakSessionStatus.WAITING_BETS);
+
+            BatakSessionEvent startEvent = BatakSessionEvent.start(batakSession);
+            simpMessagingTemplate.convertAndSend(BATAK_SESSION_TOPIC_DESTINATION + batakSession.getId(), startEvent);
         }
 
         batakSessionRepository.save(batakSession);
 
-        simpMessagingTemplate.convertAndSend(BATAK_SESSION_TOPIC_DESTINATION + batakSession.getId(), batakSession);
+        BatakSessionEvent sitEvent = BatakSessionEvent.sit(batakSession);
+        simpMessagingTemplate.convertAndSend(BATAK_SESSION_TOPIC_DESTINATION + batakSession.getId(), sitEvent);
     }
 
     public void quit(@Nonnull String batakSessionId, @Nonnull Player player) {
@@ -70,7 +76,7 @@ public class BatakSessionService {
 
         batakSession.removePlayer(player);
 
-        log.info("player[{}] removed[{}]", player);
+        log.info("player[{}] removed", player);
         
         batakSession.setStatus(BatakSessionStatus.WAITING_PLAYERS);
 

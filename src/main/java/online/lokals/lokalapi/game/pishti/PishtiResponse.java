@@ -1,6 +1,7 @@
 package online.lokals.lokalapi.game.pishti;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 import jakarta.annotation.Nullable;
@@ -39,8 +40,8 @@ public class PishtiResponse {
         }
 
         Optional<PishtiPlayer> pishtiOpponentOptional = pishti.getOpponent(player.getId());
-        if (pishtiOpponentOptional.isPresent()) {
-            this.opponent = new PishtiOpponentResponse(pishtiOpponentOptional.get());
-        }
+
+        assert Objects.requireNonNull(pishtiOpponentOptional).isPresent();
+        pishtiOpponentOptional.ifPresent(pishtiPlayer -> this.opponent = new PishtiOpponentResponse(pishtiPlayer));
     }
 }

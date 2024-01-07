@@ -1,5 +1,7 @@
 package online.lokals.lokalapi.game.batak.api;
 
+import online.lokals.lokalapi.game.pishti.PishtiSession;
+import online.lokals.lokalapi.game.pishti.api.PishtiSessionResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -12,6 +14,8 @@ import online.lokals.lokalapi.game.card.Card;
 import online.lokals.lokalapi.game.card.CardType;
 import online.lokals.lokalapi.users.User;
 
+import java.util.Map;
+
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/batak")
@@ -20,12 +24,24 @@ public class BatakSessionController {
     private final BatakSessionService batakSessionService;
     private final BatakService batakService;
 
+
+    @PostMapping
+    private ResponseEntity<BatakSessionResponse> create(
+            @RequestBody Map<String, Object> settings,
+            @AuthenticationPrincipal User currentUser
+    ) {
+
+        BatakSession batakSession = batakSessionService.create(currentUser.toPlayer(), settings);
+
+        return ResponseEntity.ok(new BatakSessionResponse(batakSession));
+    }
+
     @GetMapping("/{batakSessionId}")
     private ResponseEntity<BatakSessionResponse> get(@PathVariable String batakSessionId, @AuthenticationPrincipal User currentUser) {
 
         BatakSession batakSession = batakSessionService.get(batakSessionId);
         
-        return ResponseEntity.ok(new BatakSessionResponse(batakSession, currentUser.toPlayer()));
+        return ResponseEntity.ok(new BatakSessionResponse(batakSession));
     }
 
     @PostMapping("/{batakSessionId}/sit")
@@ -46,7 +62,7 @@ public class BatakSessionController {
     private ResponseEntity<Void> bid(@PathVariable String batakSessionId, @PathVariable String batakId, @AuthenticationPrincipal User currentUser, @RequestBody Integer betValue) {
 
         batakService.bid(batakId, currentUser.toPlayer(), betValue);
-        
+
         return ResponseEntity.ok().build();
     }
 

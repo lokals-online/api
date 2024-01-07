@@ -123,4 +123,7 @@ public class PishtiSession implements GameSession {
         else return false;
     }
 
+    public boolean playingWithChirak() {
+        return Objects.requireNonNull(away).getId().equals("chirak");
+    }
 }

@@ -8,6 +8,9 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+import java.util.Objects;
+
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/tavla")
@@ -16,12 +19,25 @@ public class BackgammonSessionController {
     private final BackgammonSessionService backgammonSessionService;
     private final BackgammonService backgammonService;
 
+    @PostMapping
+    private ResponseEntity<BackgammonSessionResponse> create(
+            @RequestBody Map<String, Object> settings,
+            @AuthenticationPrincipal User currentUser
+    ) {
+
+        BackgammonSession backgammonSession = backgammonSessionService.create(currentUser.toPlayer(), settings);
+
+        return ResponseEntity.ok(new BackgammonSessionResponse(backgammonSession));
+    }
+
     @GetMapping("/{sessionId}")
     private ResponseEntity<BackgammonSessionResponse> fetch(@PathVariable String sessionId) {
         BackgammonSession backgammonSession = backgammonSessionService.get(sessionId);
 
         return ResponseEntity.ok(new BackgammonSessionResponse(backgammonSession));
     }
+
+
 
     @PostMapping("/{sessionId}/sit")
     private ResponseEntity<Void> sit(@PathVariable String sessionId, @AuthenticationPrincipal User currentUser) {
@@ -45,6 +61,13 @@ public class BackgammonSessionController {
         Backgammon backgammon = backgammonService.get(backgammonId);
 
         return ResponseEntity.ok(new BackgammonResponse(backgammon));
+    }
+
+    @PutMapping("/{sessionId}/restart")
+    private ResponseEntity<Void> restart(@PathVariable String sessionId, @AuthenticationPrincipal User currentUser) {
+        backgammonSessionService.restart(sessionId, currentUser.toPlayer());
+
+        return ResponseEntity.ok().build();
     }
 
     @PostMapping("/{sessionId}/game/{backgammonId}/rollDice")

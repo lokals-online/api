@@ -1,5 +1,6 @@
 package online.lokals.lokalapi.game.backgammon;
 
+import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import online.lokals.lokalapi.game.Player;
@@ -12,37 +13,54 @@ import java.util.Objects;
 public class BackgammonSessionResponse {
 
     private String id;
-    private Player home;
-    private Player away;
+    private BackgammonPlayerResponse home;
+    private BackgammonPlayerResponse away;
     private BackgammonSettings settings;
     private BackgammonResponse currentMatch;
     private List<BackgammonResponse> matches;
     private String status;
-    private int homeScore;
-    private int awayScore;
-    private Integer homeFirstDice;
-    private Integer awayFirstDice;
 
     public BackgammonSessionResponse(BackgammonSession backgammonSession) {
         this.id = backgammonSession.getId();
-        this.home = backgammonSession.getHome();
-        this.away = backgammonSession.getAway();
-        this.homeFirstDice = backgammonSession.getHomeFirstDice();
-        this.awayFirstDice = backgammonSession.getAwayFirstDice();
+        this.home = new BackgammonPlayerResponse(
+                backgammonSession.getHome(),
+                backgammonSession.getHomeScore(),
+                backgammonSession.getHomeFirstDice()
+        );
+        if (Objects.nonNull(backgammonSession.getAway())) {
+            this.away = new BackgammonPlayerResponse(
+                    backgammonSession.getAway(),
+                    backgammonSession.getAwayScore(),
+                    backgammonSession.getAwayFirstDice()
+            );
+        }
+
         this.settings = backgammonSession.getSettings();
-        if (Objects.equals(backgammonSession.getStatus(), BackgammonSessionStatus.STARTED) || 
-        Objects.equals(backgammonSession.getStatus(), BackgammonSessionStatus.ENDED)) {
+        this.status = backgammonSession.getStatus().name();
+
+        if (
+                Objects.equals(backgammonSession.getStatus(), BackgammonSessionStatus.STARTED) ||
+                Objects.equals(backgammonSession.getStatus(), BackgammonSessionStatus.ENDED)
+        ) {
             Backgammon backgammon = backgammonSession.getMatches().get(backgammonSession.getMatches().size() - 1);
             this.currentMatch = new BackgammonResponse(backgammon);
             this.matches = backgammonSession.getMatches().stream().map(BackgammonResponse::new).toList();
         }
-        this.homeScore = backgammonSession.getHomeScore();
-        if (Objects.nonNull(away)) {
-            this.awayScore = backgammonSession.getAwayScore();
-        }
-        else {
-            this.awayScore = 0;
-        }
-        this.status = backgammonSession.getStatus().name();
+
+    }
+}
+
+@Data
+class BackgammonPlayerResponse {
+    private String id;
+    private String username;
+    private Integer score;
+    private Integer firstDie;
+
+    public BackgammonPlayerResponse(Player player, Integer score, Integer firstDie) {
+        this.id = player.getId();
+        this.username = player.getUsername();
+        this.score = score;
+        this.firstDie = firstDie;
     }
 }

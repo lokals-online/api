@@ -96,8 +96,8 @@ public class BatakService {
         batak.play(player.getId(), card);
 
         if (batak.gameEnded()) {
+            batak.endGame();
             batak.setStatus(BatakStatus.ENDED);
-
             // publish game end
         }
         else if (batak.currentTrickEnded()) {

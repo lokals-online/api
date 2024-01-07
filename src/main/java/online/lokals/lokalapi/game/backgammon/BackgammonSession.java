@@ -10,6 +10,7 @@ import lombok.Setter;
 import online.lokals.lokalapi.game.LokalGames;
 import online.lokals.lokalapi.game.GameSession;
 import online.lokals.lokalapi.game.Player;
+import online.lokals.lokalapi.game.batak.Batak;
 import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.MongoId;
@@ -41,8 +42,8 @@ public class BackgammonSession implements GameSession {
 
     private BackgammonSessionStatus status;
 
-    public BackgammonSession(@Nonnull String tableId, @Nonnull Player home, @Nullable Player away, BackgammonSettings settings) {
-        this.tableId = tableId;
+    public BackgammonSession(@Nonnull Player home, @Nullable Player away, BackgammonSettings settings) {
+        this.tableId = home.getId(); // TODO: tables belong to home player!
         this.home = home;
         this.away = away;
         this.settings = settings;
@@ -119,6 +120,10 @@ public class BackgammonSession implements GameSession {
         }
     }
 
+    public void setCurrentMatch(Backgammon backgammon) {
+        this.matches.set(this.matches.size()-1, backgammon);
+    }
+
     @Nullable
     public Player getPreviousWinner() {
         if (this.matches == null || this.matches.isEmpty()) return null;
@@ -176,4 +181,7 @@ public class BackgammonSession implements GameSession {
         // scoreBoard.values().stream().anyMatch((Integer i) -> i >= backgammonSession.getSettings().getRaceTo());
     }
 
+    public boolean playingWithChirak() {
+        return Objects.requireNonNull(away).getId().equals("chirak");
+    }
 }

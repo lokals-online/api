@@ -3,6 +3,8 @@ package online.lokals.lokalapi.table;
 import java.util.List;
 import java.util.Optional;
 
+import online.lokals.lokalapi.game.Player;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,10 +26,12 @@ import online.lokals.lokalapi.users.User;
 @RequiredArgsConstructor
 public class TableService {
 
+    private static final String MASA_TOPIC_DESTINATION = "/topic/masa";
     private final TableRepository tableRepository;
     private final BackgammonSessionService backgammonSessionService;
     private final PishtiSessionService pishtiSessionService;
     private final BatakSessionService batakSessionService;
+    private final SimpMessagingTemplate simpMessagingTemplate;
 
     public List<Table> getAllTables() {
         return tableRepository.findAll();
@@ -42,18 +46,22 @@ public class TableService {
         final Table table = tableRepository.save(new Table(owner));
 
         // fetch opponent(s)
+        Player awayPlayer = null;
+        if (gameRequest.getOpponent().equals("@chirak")) {
+            awayPlayer = Player.chirak();
+        }
 
         if (LokalGames.BACKGAMMON.getKey().equals(gameRequest.getGameKey())) {
-            BackgammonSession backgammonSession = backgammonSessionService.create(table.getId(), owner.toPlayer(), null, gameRequest.getSettings());
-            table.setGameSession(backgammonSession);
+//            BackgammonSession backgammonSession = backgammonSessionService.create(table.getId(), owner.toPlayer(), awayPlayer, gameRequest.getSettings());
+//            table.setGameSession(backgammonSession);
         }
         else if (LokalGames.PISHTI.getKey().equals(gameRequest.getGameKey())) {
-            PishtiSession pishtiSession = pishtiSessionService.create(table.getId(), owner.toPlayer(), null, gameRequest.getSettings());
-            table.setGameSession(pishtiSession);
+//            PishtiSession pishtiSession = pishtiSessionService.create(table.getId(), owner.toPlayer(), awayPlayer, gameRequest.getSettings());
+//            table.setGameSession(pishtiSession);
         }
         else if (LokalGames.BATAK.getKey().equals(gameRequest.getGameKey())) {
-            BatakSession batakSession = batakSessionService.create(table.getId(), owner.toPlayer(), gameRequest.getSettings());
-            table.setGameSession(batakSession);
+//            BatakSession batakSession = batakSessionService.create(table.getId(), owner.toPlayer(), gameRequest.getSettings());
+//            table.setGameSession(batakSession);
         }
         else throw new IllegalArgumentException("");
 
@@ -87,6 +95,8 @@ public class TableService {
 
         if (tableToQuit.getUsers().isEmpty() || tableToQuit.getOwner().equals(user)) {
             deleteTable(tableToQuit.getId());
+
+            simpMessagingTemplate.convertAndSend(MASA_TOPIC_DESTINATION + tableId, "OWNER_CLOSED");
         }
         else {
             tableToQuit.removeUser(user);
@@ -102,7 +112,10 @@ public class TableService {
             else if (LokalGames.BATAK.getKey().equals(tableToQuit.getGameSession().getKey())) {
                 batakSessionService.quit(tableToQuit.getGameSession().getId(), user.toPlayer());
             }
+
+            simpMessagingTemplate.convertAndSend(MASA_TOPIC_DESTINATION + tableId, "PLAYER_QUIT");
         }
+        
     }
 
     public void deleteTable(@Nonnull String tableId) {

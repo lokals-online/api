@@ -6,8 +6,11 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import online.lokals.lokalapi.game.Player;
 import online.lokals.lokalapi.game.backgammon.event.BackgammonGameEvent;
+import online.lokals.lokalapi.game.batak.Batak;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 
@@ -97,16 +100,21 @@ public class BackgammonService {
             return;
         }
 
-        if (backgammon.isTurnOver() || (backgammon.possibleMoves() == null || backgammon.possibleMoves().isEmpty())) {
+        if (backgammon.isTurnOver() || (backgammon.possibleMoves() == null || Objects.requireNonNull(backgammon.possibleMoves()).isEmpty())) {
             Turn changedTurn = backgammon.changeTurn();
 
+            log.info("turn has changed to: {}", changedTurn.getPlayerId());
             backgammonRepository.save(backgammon);
-
-           // Thread.sleep(2000);
-
-           // buggy! this should be sent after 'MOVE' event!
             BackgammonGameEvent turnHasChangedEvent = BackgammonGameEvent.turnHasChanged(backgammon.getId(), backgammon);
             simpMessagingTemplate.convertAndSend(BACKGAMMON_TOPIC_DESTINATION + backgammon.getId(), turnHasChangedEvent);
+
+            Thread.sleep(1000);
+
+            if (Player.chirak().getId().equals(changedTurn.getPlayerId())) {
+                this.playForChirak(gameId);
+
+                return;
+            }
         }
 
         backgammonRepository.save(backgammon);
@@ -114,5 +122,41 @@ public class BackgammonService {
         BackgammonGameEvent event = BackgammonGameEvent.move(gameId, backgammon);
 
         simpMessagingTemplate.convertAndSend(BACKGAMMON_TOPIC_DESTINATION + backgammon.getId(), event);
+    }
+
+    @SneakyThrows
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void playForChirak(@Nonnull String backgammonId) {
+        Backgammon backgammon = get(backgammonId);
+        if (Objects.requireNonNull(backgammon.currentTurn()).getPlayerId().equals(Player.chirak().getId())) {
+
+            log.debug("playing for chirak turn[{}]", backgammon.currentTurn());
+            backgammon.rollDice();
+            backgammonRepository.save(backgammon);
+
+            BackgammonGameEvent event = BackgammonGameEvent.rollDice(backgammon.getId(), backgammon);
+            simpMessagingTemplate.convertAndSend(BACKGAMMON_TOPIC_DESTINATION + backgammon.getId(), event);
+
+            Thread.sleep(1000);
+
+            while (!backgammon.isTurnOver() && !Objects.requireNonNull(backgammon.possibleMoves()).isEmpty()) {
+                Optional<BackgammonMove> firstMove = backgammon.possibleMoves().stream().findFirst();
+                if (firstMove.isPresent()) {
+                    firstMove.ifPresent(backgammonMove -> backgammon.move(Player.chirak(), backgammonMove));
+                    log.debug("selected move : [{}]", firstMove.get());
+                }
+                else log.warn("no move found!");
+            }
+
+            Turn changedTurn = backgammon.changeTurn();
+            backgammonRepository.save(backgammon);
+
+            BackgammonGameEvent turnHasChangedEvent = BackgammonGameEvent.turnHasChanged(backgammon.getId(), backgammon);
+            simpMessagingTemplate.convertAndSend(BACKGAMMON_TOPIC_DESTINATION + backgammon.getId(), turnHasChangedEvent);
+        }
+    }
+
+    public Backgammon restart(BackgammonSession backgammonSession) {
+        return newMatchForSession(backgammonSession);
     }
 }

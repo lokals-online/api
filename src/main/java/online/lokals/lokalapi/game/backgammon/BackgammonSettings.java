@@ -10,11 +10,16 @@ import java.util.Map;
 
 @Getter
 @Setter
-@NoArgsConstructor
+//@NoArgsConstructor
 public class BackgammonSettings{
     int raceTo;
     @Nullable
     private Integer timeLimit;
+
+    public BackgammonSettings() {
+        this.raceTo = 2;
+        this.timeLimit = 0;
+    }
 
     public BackgammonSettings(Map<String, Object> settings) {
 
@@ -25,7 +30,5 @@ public class BackgammonSettings{
         catch (Exception e) {
             throw new WrongBackgammonSettings(settings);
         }
-
-
     }
 }

@@ -8,7 +8,7 @@ logging:
         web: warn
         security: warn
     online.lokals.lokalapi.game:
-      backgammon: warn
+      backgammon: trace
       pishti: warn
 
 jwt:

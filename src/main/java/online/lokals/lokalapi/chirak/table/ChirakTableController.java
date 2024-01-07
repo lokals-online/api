@@ -57,7 +57,7 @@ public class ChirakTableController {
 
         Table table = tableService
                 .findByUser(currentUser)
-                .orElseThrow(ResourceNotFoundException::new);
+                .orElse(null);
 
         return new TableResponse(table);
     }

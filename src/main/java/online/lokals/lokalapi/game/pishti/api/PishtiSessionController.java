@@ -1,5 +1,7 @@
 package online.lokals.lokalapi.game.pishti.api;
 
+import online.lokals.lokalapi.game.backgammon.BackgammonSession;
+import online.lokals.lokalapi.game.backgammon.BackgammonSessionResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,6 +18,8 @@ import online.lokals.lokalapi.game.pishti.PishtiSession;
 import online.lokals.lokalapi.game.pishti.PishtiSessionService;
 import online.lokals.lokalapi.users.User;
 
+import java.util.Map;
+
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/pishti")
@@ -23,6 +27,17 @@ public class PishtiSessionController {
 
     private final PishtiSessionService pishtiSessionService;
     private final PishtiService pishtiService;
+
+    @PostMapping
+    private ResponseEntity<PishtiSessionResponse> create(
+            @RequestBody Map<String, Object> settings,
+            @AuthenticationPrincipal User currentUser
+    ) {
+
+        PishtiSession pishtiSession = pishtiSessionService.create(currentUser.toPlayer(), settings);
+
+        return ResponseEntity.ok(new PishtiSessionResponse(pishtiSession, currentUser.toPlayer()));
+    }
 
     @GetMapping("/{pishtiSessionId}")
     private ResponseEntity<PishtiSessionResponse> get(@PathVariable String pishtiSessionId, @AuthenticationPrincipal User currentUser) {
@@ -57,7 +72,7 @@ public class PishtiSessionController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
 
-        pishtiSessionService.checkScore(pishtiSessionId);
+        pishtiSessionService.checkScore(pishtiSessionId, currentUser.toPlayer());
 
         return ResponseEntity.noContent().build();
     }

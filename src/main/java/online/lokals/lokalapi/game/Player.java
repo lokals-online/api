@@ -2,6 +2,7 @@ package online.lokals.lokalapi.game;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import org.springframework.security.core.parameters.P;
 
 @Getter
 @AllArgsConstructor
@@ -19,6 +20,10 @@ public class Player {
     public Player(String id, String username) {
         this.id = id;
         this.username = username;
+    }
+
+    public static Player chirak() {
+        return new Player("chirak", "çırak");
     }
 
     @Override

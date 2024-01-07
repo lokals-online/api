@@ -1,5 +1,6 @@
 package online.lokals.lokalapi.game.pishti.api;
 
+import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import online.lokals.lokalapi.game.Player;
@@ -16,25 +17,34 @@ import java.util.Objects;
 public class PishtiSessionResponse {
 
     private String id;
-    private Player home;
-    private Player away;
+    private PishtiPlayerResponse home;
+    private PishtiPlayerResponse away;
     private PishtiSettings settings;
     private PishtiResponse currentMatch;
     private String status;
-    private long homeScore;
-    private long awayScore;
 
     public PishtiSessionResponse(PishtiSession pishtiSession, Player player) {
         this.id = pishtiSession.getId();
-        this.home = pishtiSession.getHome();
-        this.away = pishtiSession.getAway();
+        this.home = new PishtiPlayerResponse(pishtiSession.getHome(), pishtiSession.getHomeScore());
+        this.away = new PishtiPlayerResponse(pishtiSession.getAway(), pishtiSession.getAwayScore());
         this.settings = pishtiSession.getSettings();
         if (Objects.equals(pishtiSession.getStatus(), PishtiSessionStatus.STARTED)) {
             Pishti pishti = pishtiSession.getMatches().get(pishtiSession.getMatches().size() - 1);
             this.currentMatch = new PishtiResponse(pishti, player);
         }
-        this.homeScore = pishtiSession.getHomeScore();
-        this.awayScore = pishtiSession.getAwayScore();
         this.status = pishtiSession.getStatus().name();
+    }
+}
+
+@Data
+class PishtiPlayerResponse {
+    private String id;
+    private String username;
+    private Integer score;
+
+    public PishtiPlayerResponse(Player player, Integer score) {
+        this.id = player.getId();
+        this.username = player.getUsername();
+        this.score = score;
     }
 }

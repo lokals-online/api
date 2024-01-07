@@ -245,7 +245,7 @@ public class Pishti {
     private void shuffleNewCards() {
         this.cards.clear();
         this.cards = new ArrayList<>(Card.ofStandardPack());
-//        Collections.shuffle(this.cards);
+        Collections.shuffle(this.cards);
 
         log.trace("new series cards({}) are shuffled...", this.cards.size());
     }

@@ -152,7 +152,12 @@ public class Batak {
     }
 
     public Map<String, Integer> getScores() {
-        return batakPlayers.stream().collect(Collectors.toMap(BatakPlayer::getId, BatakPlayer::getScore));
+        return batakPlayers.stream().collect(Collectors.toMap(BatakPlayer::getId, batakPlayer -> {
+            if (this.bid.getPlayerId().equals(batakPlayer.getId())) {
+                return (this.bid.getValue() > batakPlayer.getScore()) ? this.bid.getValue()*(-1) : this.bid.getValue();
+            }
+            else return (batakPlayer.getScore() < 2) ? this.bid.getValue()*(-1) : batakPlayer.getScore();
+        }));
     }
 
     @Override
@@ -166,5 +171,8 @@ public class Batak {
                 ", status=" + status +
                 ", tricks=" + tricks +
                 '}';
+    }
+
+    public void endGame() {
     }
 }
