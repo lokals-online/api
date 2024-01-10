@@ -2,14 +2,24 @@ package online.lokals.lokalapi.game.pishti;
 
 import jakarta.annotation.Nonnull;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import online.lokals.lokalapi.game.Player;
+import online.lokals.lokalapi.game.backgammon.Backgammon;
+import online.lokals.lokalapi.game.backgammon.BackgammonMove;
+import online.lokals.lokalapi.game.backgammon.Turn;
+import online.lokals.lokalapi.game.backgammon.event.BackgammonGameEvent;
+import online.lokals.lokalapi.game.card.Card;
 import online.lokals.lokalapi.game.pishti.api.PishtiPlayRequest;
 import online.lokals.lokalapi.game.pishti.event.PishtiEvent;
 
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Objects;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -36,8 +46,9 @@ public class PishtiService {
         return new PishtiResponse(pishti, player);
     }
 
+    @SneakyThrows
     @Transactional
-    public void play(@Nonnull String pishtiSessionId, @Nonnull String pishtiId, @Nonnull PishtiPlayRequest playRequest, Player player) {
+    public void play(@Nonnull String pishtiId, @Nonnull PishtiPlayRequest playRequest, Player player) {
         Pishti pishti = pishtiRepository.findById(pishtiId).orElseThrow();
 
         if (!pishti.getTurn().equals(player.getId())) {
@@ -51,14 +62,18 @@ public class PishtiService {
         // publish card (omit for now)
         // simpMessagingTemplate.convertAndSend(PISHTI_TOPIC_DESTINATION + pishtiId, PishtiEvent.cardPlayed(pishtiId, playRequest.card()));
 
+        // Thread.sleep(1000);
+
         // CHECK STACK
         if (pishti.checkPishti()) {
             log.trace("{} made pishti by playing {}", player.getUsername(), playRequest.card());
             // publish pishti
+//            simpMessagingTemplate.convertAndSend(PISHTI_TOPIC_DESTINATION + pishtiId, PishtiEvent.madePishti(pishtiId, player.getId()));
         }
         else if (pishti.checkCapture()) {
             log.trace("{} has captured by playing {}", player.getUsername(), playRequest.card());
             // publish capture
+//            simpMessagingTemplate.convertAndSend(PISHTI_TOPIC_DESTINATION + pishtiId, PishtiEvent.captured(pishtiId, player.getId()));
         }
 
         if (pishti.checkGameEnded()) {
@@ -77,18 +92,53 @@ public class PishtiService {
             log.trace("checking game ended!");
             
             pishti.startNewSeries();
+
+            pishtiRepository.save(pishti);
+            simpMessagingTemplate.convertAndSend(PISHTI_TOPIC_DESTINATION + pishtiId, PishtiEvent.changeTurn(pishtiId, pishti.getTurn()));
         }
         else {
             // check hands
             pishti.dealHands();
             // change turn
             String changedTurn = pishti.changeTurn();
+
+            pishtiRepository.save(pishti);
+            simpMessagingTemplate.convertAndSend(PISHTI_TOPIC_DESTINATION + pishtiId, PishtiEvent.changeTurn(pishtiId, pishti.getTurn()));
         }
 
-        pishtiRepository.save(pishti);
+        // this should be aop
+        if (Player.chirak().getId().equals(pishti.getTurn())) {
 
-        simpMessagingTemplate.convertAndSend(PISHTI_TOPIC_DESTINATION + pishtiId, PishtiEvent.changeTurn(pishtiId, pishti.getTurn()));
+            this.playForChirak(pishtiId);
+        }
     }
 
+    @SneakyThrows
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void playForChirak(@Nonnull String pishtiId) {
+        Pishti pishti = pishtiRepository.findById(pishtiId).orElseThrow();
+
+        if (Objects.requireNonNull(pishti.getTurn()).equals(Player.chirak().getId())) {
+
+            log.debug("playing for chirak turn[{}]", pishti.getTurn());
+
+            Card card = pishti.getPlayer("chirak").get().getHand().get(0);
+
+            this.play(pishti.getId(), new PishtiPlayRequest(card), Player.chirak());
+//            if (pishti.getPlayer(Player.chirak().getId()).isPresent()) {
+//
+//                pishti.getPlayer(Player.chirak().getId()).get()
+//                        .getHand()
+//                        .stream()
+//                        .anyMatch(card -> card.getNumber() == pishti.getStack().get(pishti.getStack().size()-1).getNumber())
+//            }
+
+//            Turn changedTurn = backgammon.changeTurn();
+//            backgammonRepository.save(backgammon);
+//
+//            BackgammonGameEvent turnHasChangedEvent = BackgammonGameEvent.turnHasChanged(backgammon.getId(), backgammon);
+//            simpMessagingTemplate.convertAndSend(BACKGAMMON_TOPIC_DESTINATION + backgammon.getId(), turnHasChangedEvent);
+        }
+    }
 
 }

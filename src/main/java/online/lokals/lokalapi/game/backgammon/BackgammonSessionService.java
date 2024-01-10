@@ -29,9 +29,11 @@ public class BackgammonSessionService {
 
     public BackgammonSession create(
             @Nonnull Player homePlayer,
-            @Nullable Player awayPlayer,
+            @Nullable String opponent,
             Map<String, Object> gameSettings
     ) {
+
+        Player awayPlayer = Player.chirak().getId().equals(opponent) ? Player.chirak() : null;
 
         BackgammonSession backgammonSession = new BackgammonSession(homePlayer, awayPlayer, new BackgammonSettings(gameSettings));
 

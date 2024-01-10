@@ -11,5 +11,13 @@ public record PishtiEvent(String id, String type, Object payload) {
     public static PishtiEvent changeTurn(String pishtiId, String changedTurn) {
         return new PishtiEvent(pishtiId, "CHANGE_TURN", changedTurn);
     }
+
+    public static PishtiEvent madePishti(String pishtiId, String playerId) {
+        return new PishtiEvent(pishtiId, "MADE_PISHTI", playerId);
+    }
+
+    public static PishtiEvent captured(String pishtiId, String playerId) {
+        return new PishtiEvent(pishtiId, "CAPTURED", playerId);
+    }
 }
 

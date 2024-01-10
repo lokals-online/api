@@ -1,5 +1,6 @@
 package online.lokals.lokalapi.game.backgammon.api;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import online.lokals.lokalapi.game.backgammon.*;
 import online.lokals.lokalapi.users.User;
@@ -21,11 +22,15 @@ public class BackgammonSessionController {
 
     @PostMapping
     private ResponseEntity<BackgammonSessionResponse> create(
-            @RequestBody Map<String, Object> settings,
+            @RequestBody @Valid NewBackgammonRequest newBackgammonRequest,
             @AuthenticationPrincipal User currentUser
     ) {
 
-        BackgammonSession backgammonSession = backgammonSessionService.create(currentUser.toPlayer(), settings);
+        BackgammonSession backgammonSession = backgammonSessionService.create(
+                currentUser.toPlayer(),
+                newBackgammonRequest.getOpponent(),
+                newBackgammonRequest.getSettings()
+        );
 
         return ResponseEntity.ok(new BackgammonSessionResponse(backgammonSession));
     }

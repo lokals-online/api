@@ -43,17 +43,4 @@ public class LokalConfiguration implements WebMvcConfigurer {
         return localeResolver;
     }
 
-//    @Bean
-//    public WebMvcConfigurer corsConfigurer() {
-//        return new WebMvcConfigurer() {
-//            @Override
-//            public void addCorsMappings(CorsRegistry registry) {
-//                registry.addMapping("/**")
-//                        .allowedHeaders(LOKAL_USER_ID_HEADER, LOKAL_USER_TOKEN_HEADER)
-//                        .allowedMethods("*")
-//                        .allowedOrigins("http://localhost:19006", "http://192.168.2.27:8080");
-//            }
-//        };
-//    }
-
 }

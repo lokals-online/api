@@ -108,9 +108,10 @@ public class BackgammonService {
             BackgammonGameEvent turnHasChangedEvent = BackgammonGameEvent.turnHasChanged(backgammon.getId(), backgammon);
             simpMessagingTemplate.convertAndSend(BACKGAMMON_TOPIC_DESTINATION + backgammon.getId(), turnHasChangedEvent);
 
-            Thread.sleep(1000);
 
             if (Player.chirak().getId().equals(changedTurn.getPlayerId())) {
+                Thread.sleep(1000);
+
                 this.playForChirak(gameId);
 
                 return;

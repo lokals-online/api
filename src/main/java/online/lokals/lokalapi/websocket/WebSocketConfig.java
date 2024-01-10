@@ -32,7 +32,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/lokal-ws")
-                    .setAllowedOriginPatterns("*.lokals.online*", "*localhost*")
+                    .setAllowedOriginPatterns("http://localhost:[*]", "https://*.lokals.online:[*]","http://*.lokals.online:[*]")
                 // .setAllowedOrigins("http://localhost:19006")
                .withSockJS();
     }

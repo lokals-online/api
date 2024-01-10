@@ -1,7 +1,9 @@
 package online.lokals.lokalapi.game.pishti.api;
 
+import jakarta.validation.Valid;
 import online.lokals.lokalapi.game.backgammon.BackgammonSession;
 import online.lokals.lokalapi.game.backgammon.BackgammonSessionResponse;
+import online.lokals.lokalapi.game.backgammon.api.NewBackgammonRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -30,20 +32,22 @@ public class PishtiSessionController {
 
     @PostMapping
     private ResponseEntity<PishtiSessionResponse> create(
-            @RequestBody Map<String, Object> settings,
+            @RequestBody @Valid NewPishtiRequest newPishtiRequest,
             @AuthenticationPrincipal User currentUser
     ) {
+        PishtiSession pishtiSession = pishtiSessionService.create(
+                currentUser.toPlayer(),
+                newPishtiRequest.getOpponent(),
+                newPishtiRequest.getSettings());
 
-        PishtiSession pishtiSession = pishtiSessionService.create(currentUser.toPlayer(), settings);
-
-        return ResponseEntity.ok(new PishtiSessionResponse(pishtiSession, currentUser.toPlayer()));
+        return ResponseEntity.ok(new PishtiSessionResponse(pishtiSession));
     }
 
     @GetMapping("/{pishtiSessionId}")
     private ResponseEntity<PishtiSessionResponse> get(@PathVariable String pishtiSessionId, @AuthenticationPrincipal User currentUser) {
         PishtiSession pishtiSession = pishtiSessionService.get(pishtiSessionId);
 
-        return ResponseEntity.ok(new PishtiSessionResponse(pishtiSession, currentUser.toPlayer()));
+        return ResponseEntity.ok(new PishtiSessionResponse(pishtiSession));
     }
 
     @PostMapping("/{sessionId}/sit")
@@ -67,7 +71,7 @@ public class PishtiSessionController {
                                       @AuthenticationPrincipal User currentUser) {
 
         try {
-            pishtiService.play(pishtiSessionId, pishtiId, playRequest, currentUser.toPlayer());
+            pishtiService.play(pishtiId, playRequest, currentUser.toPlayer());
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }

@@ -4,13 +4,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import jakarta.validation.constraints.NotNull;
 import online.lokals.lokalapi.game.pishti.api.PishtiSessionResponse;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.annotation.Nonnull;
-import jakarta.annotation.Nullable;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import online.lokals.lokalapi.game.Player;
@@ -33,11 +33,21 @@ public class PishtiSessionService {
         return pishtiSessionRepository.findPishtiSessionByStatus(PishtiSessionStatus.WAITING);
     }
 
-    public PishtiSession create(@Nonnull Player homePlayer, Map<String, Object> gameSettings) {
+    public PishtiSession create(@Nonnull Player homePlayer, @NotNull String opponent, Map<String, Object> gameSettings) {
 
-        PishtiSession pishtiSession = new PishtiSession(homePlayer.getId(), homePlayer, Player.chirak(), new PishtiSettings(gameSettings));
+        Player awayPlayer = Player.chirak().getId().equals(opponent) ? Player.chirak() : null;
 
-        return pishtiSessionRepository.save(pishtiSession);
+        PishtiSession pishtiSession = new PishtiSession(homePlayer.getId(), homePlayer, awayPlayer, new PishtiSettings(gameSettings));
+
+        pishtiSessionRepository.save(pishtiSession);
+
+        if (pishtiSession.playingWithChirak()) {
+            createNew(pishtiSession);
+
+
+        }
+
+        return pishtiSession;
     }
 
     public PishtiSession get(@Nonnull String pishtiSessionId) {
@@ -54,7 +64,7 @@ public class PishtiSessionService {
 
         pishtiSession.setAway(opponentPlayer);
 
-        createNew(pishtiSession, pishtiSession.getHome());
+        createNew(pishtiSession);
     }
 
     public void checkScore(@Nonnull String pishtiSessionId, Player currentPlayer) {
@@ -68,7 +78,7 @@ public class PishtiSessionService {
 
             pishtiSessionRepository.save(pishtiSession);
 
-            PishtiSessionResponse pishtiSessionResponse = new PishtiSessionResponse(pishtiSession, currentPlayer);
+            PishtiSessionResponse pishtiSessionResponse = new PishtiSessionResponse(pishtiSession);
             simpMessagingTemplate.convertAndSend(PISHTI_SESSION_TOPIC_DESTINATION + pishtiSession.getId(), pishtiSessionResponse);
             return;
         }
@@ -76,15 +86,11 @@ public class PishtiSessionService {
         // check continuing match
         Pishti currentMatch = pishtiSession.getCurrentMatch();
         if (currentMatch.checkGameEnded()) {
-            createNew(pishtiSession, currentPlayer);
-        }
-        else {
-            PishtiSessionResponse pishtiSessionResponse = new PishtiSessionResponse(pishtiSession, currentPlayer);
-            simpMessagingTemplate.convertAndSend(PISHTI_SESSION_TOPIC_DESTINATION + pishtiSession.getId(), pishtiSessionResponse);
+            createNew(pishtiSession);
         }
     }
 
-    private void createNew(PishtiSession pishtiSession, Player currentPlayer) {
+    private void createNew(PishtiSession pishtiSession) {
         Pishti pishti = pishtiService.newMatch(pishtiSession);
 
         pishtiSession.addMatch(pishti);
@@ -92,8 +98,14 @@ public class PishtiSessionService {
 
         pishtiSessionRepository.save(pishtiSession);
 
+        if (pishtiSession.playingWithChirak() && Player.chirak().getId().equals(Objects.requireNonNull(pishti.getTurn()))) {
+            pishti.start();
+
+            pishtiService.playForChirak(pishti.getId());
+        }
+
         // notify table (new match)
-        PishtiSessionResponse pishtiSessionResponse = new PishtiSessionResponse(pishtiSession, currentPlayer);
+        PishtiSessionResponse pishtiSessionResponse = new PishtiSessionResponse(pishtiSession);
         simpMessagingTemplate.convertAndSend(PISHTI_SESSION_TOPIC_DESTINATION + pishtiSession.getId(), pishtiSessionResponse);
     }
 }
