@@ -60,7 +60,7 @@ public class Card {
     }
 
     public int pishtiValue() {
-        if (this.getNumber() == 1 || this.getNumber() == 11) {
+        if (this.getNumber() == 14 || this.getNumber() == 11) {
             return 1;
         }
         else if (this.getNumber() == 2 && this.getType().equals(CLUBS)) {
