@@ -124,6 +124,6 @@ public class PishtiSession implements GameSession {
     }
 
     public boolean playingWithChirak() {
-        return Objects.requireNonNull(away).getId().equals("chirak");
+        return Objects.nonNull(away) && away.getId().equals("chirak");
     }
 }
