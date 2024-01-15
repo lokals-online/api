@@ -58,8 +58,8 @@ public class BackgammonService {
 
         Thread.sleep(2000);
 
-        Set<BackgammonMove> backgammonMoves = backgammon.possibleMoves();
-        if (backgammonMoves != null && backgammonMoves.isEmpty()) {
+        Set<BackgammonMove> possibleMoves = backgammon.possibleMoves();
+        if (possibleMoves != null && possibleMoves.isEmpty()) {
             Turn changedTurn = backgammon.changeTurn();
             backgammonRepository.save(backgammon);
 
@@ -76,10 +76,11 @@ public class BackgammonService {
         Backgammon backgammon = get(gameId);
 
         // validate move: checkPlayer, checkHitPieces, checkDestinations
-        if (backgammon.possibleMoves() != null && !backgammon.possibleMoves().isEmpty()) {
+        Set<BackgammonMove> possibleMoves = backgammon.possibleMoves();
+        if (possibleMoves != null && !possibleMoves.isEmpty()) {
 
             boolean isValid = playRequest.moves().stream()
-                    .anyMatch(backgammonMove -> Objects.requireNonNull(backgammon.possibleMoves())
+                    .anyMatch(backgammonMove -> Objects.requireNonNull(possibleMoves)
                             .stream()
                             .anyMatch(backgammonMove1 -> backgammonMove1.isSame(backgammonMove)));
 
@@ -100,7 +101,7 @@ public class BackgammonService {
             return;
         }
 
-        if (backgammon.isTurnOver() || (backgammon.possibleMoves() == null || Objects.requireNonNull(backgammon.possibleMoves()).isEmpty())) {
+        if (backgammon.isTurnOver() || (possibleMoves == null || Objects.requireNonNull(possibleMoves).isEmpty())) {
             Turn changedTurn = backgammon.changeTurn();
 
             log.info("turn has changed to: {}", changedTurn.getPlayerId());
@@ -140,13 +141,11 @@ public class BackgammonService {
 
             Thread.sleep(1000);
 
-            while (!backgammon.isTurnOver() && !Objects.requireNonNull(backgammon.possibleMoves()).isEmpty()) {
-                Optional<BackgammonMove> firstMove = backgammon.possibleMoves().stream().findFirst();
-                if (firstMove.isPresent()) {
-                    firstMove.ifPresent(backgammonMove -> backgammon.move(Player.chirak(), backgammonMove));
-                    log.debug("selected move : [{}]", firstMove.get());
-                }
-                else log.warn("no move found!");
+            Set<BackgammonMove> possibleMoves = backgammon.possibleMoves();
+            while (!backgammon.isTurnOver() && !Objects.requireNonNull(possibleMoves).isEmpty()) {
+                Optional<BackgammonMove> firstMove = possibleMoves.stream().findFirst();
+                firstMove.ifPresent(backgammonMove -> backgammon.move(Player.chirak(), backgammonMove));
+                log.debug("selected move : [{}]", firstMove.get());
             }
 
             Turn changedTurn = backgammon.changeTurn();

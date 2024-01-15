@@ -6,14 +6,18 @@ import jakarta.validation.constraints.NotNull;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import online.lokals.lokalapi.game.Player;
+import org.springframework.data.annotation.Transient;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 import static java.util.function.Predicate.not;
 
+@Slf4j
 @Getter
 @Setter
 public class Turn {
@@ -24,8 +28,8 @@ public class Turn {
 
     private Integer[] dices;
 
-    @Setter(AccessLevel.PRIVATE)
-    private Integer moveCount;
+    @Transient
+    private int moveCount;
 
     private List<BackgammonMove> moves = new ArrayList<>();
 
@@ -39,6 +43,15 @@ public class Turn {
         this.player = player;
     }
 
+    public int getMoveCount() {
+        if (Objects.nonNull(dices)) {
+            return dices[0].equals(dices[1]) ? 4 : 2;
+        }
+        else {
+            return 0;
+        }
+    }
+
     public void addMove(BackgammonMove backgammonMove) {
         backgammonMove.setMovedAt(System.currentTimeMillis());
         this.moves.add(backgammonMove);
@@ -48,13 +61,6 @@ public class Turn {
     public Integer[] rollDice() {
 //        this.dices = new Integer[]{3, 2};
         this.dices = new Integer[]{(int) (Math.random() * 6 + 1), (int) (Math.random() * 6 + 1)};
-
-        if (dices[0].equals(dices[1])) {
-            moveCount = 4;
-        }
-        else {
-            moveCount = 2;
-        }
 
         return dices;
     }
@@ -73,6 +79,7 @@ public class Turn {
         if (dices == null || dices.length == 0) return null;
 
         List<Integer> playedDices = moves.stream().map(BackgammonMove::getDice).toList();
+        log.info(playedDices.toString());
         if (playedDices.isEmpty()) return dices;
 
         if (isDoubleDice()) {
@@ -80,8 +87,18 @@ public class Turn {
             Arrays.fill(remainingDices, dices[0]);
             return remainingDices;
         }
+        else if (playedDices.size() == 1) {
+            if (dices[0].equals(playedDices.get(0))) {
+                return new Integer[] {dices[1]};
+            }
+            else if (dices[1].equals(playedDices.get(0))) {
+                return new Integer[] {dices[0]};
+            }
+
+            return new Integer[] {dices[0] > dices[1] ? dices[1] : dices[0]};
+        }
         else {
-            return Arrays.stream(dices).filter(not(playedDices::contains)).toArray(Integer[]::new);
+            return dices;
         }
     }
 

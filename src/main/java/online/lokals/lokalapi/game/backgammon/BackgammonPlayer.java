@@ -52,13 +52,9 @@ public class BackgammonPlayer extends Player {
         var total = INITIAL_SETUP.values().stream().reduce(0, Integer::sum);
         var current = checkers.values().stream().reduce(0, Integer::sum);
 
-        return total != current;
+        return !total.equals(current);
     }
 
-    /**
-     * assuming it's a valid move
-     * @param move
-     */
     public void move(BackgammonMove move) {
         if (move.isFromHitSlot()) {
             log.trace("from hit slot. to: {}", move.getTo());
