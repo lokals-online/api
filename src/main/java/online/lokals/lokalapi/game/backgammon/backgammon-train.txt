@@ -1,0 +1,208 @@
+in this context;
+    - #command is an example #command object
+    - #command has some instructions in it.
+    - when user query starts with '#' then find its instructions and apply them.
+
+standard backgammon game!
+    - player:
+        id: {id}, 
+        hand: [{index}: {checkerCount}],
+        hit slot: 0
+
+    turn: 
+        - player: {id}, 
+        - dice: [],
+        - moves:  [ from: {index}, to: {index} ]
+        - calculatedMoves:  [ from: {index}, to: {index} ]
+
+#startBackgammon({player1Id}, {player2Id})
+    1. initialize the players' hands. both must be [6: 5, 8: 3, 13: 5, 24: 2]
+    2. generate a random number from 1 to 6 (both included) and set as each player's first die
+    3. set the turn 
+    4. prompt a warning message that contains current turn player id. (make it bold also)
+    5. #calculatePossibleMoves
+    6. #printBoard
+
+#move(player: {playerId}, moves: [{from: {index}, to: {index}}])
+    1. for each move, get "from" number and validate that {playerId} has checkers on that point (player.hand[from]). if validation fails, then only prompt WRONG MOVE!
+    2. for each move, get "to" number and check if opponent has any checkers on hand{"24-{to}"} (24-to is necessary).
+        if opponent has more than 1 checkers on target slot 
+            - then it is not allowed. do nothing. prompt a warning message you choose.
+        if opponent has 1 checker on target slot, then remove opponent's checker and increase opponent's hitSlot count.
+    3. for each move, increase "to" point count and reduce "from" point count
+
+#printBoard
+    prompt below: 
+    ```
+        Player 1 (ID: {id}) Hand: ({player.hand})
+        Player 2 (ID: {id}) Hand: ({player.hand})
+
+        Current Turn: **Player {current turn player id}**
+        Possible Movessss
+    ```
+
+#calculatePossibleMoves
+    1. For each die in the roll:
+        Check each checker in the player's home board:
+            - If the player has checkers on the bar (hit slot), they must first move those checkers back into play.
+            - If the player doesn't have any checkers on the bar, check each point on the board to find possible moves.
+    
+    2. For each point on the board:
+        Check if there are checkers owned by the player:
+            - If there are checkers, check if the player can move a checker from that point based on the roll of the dice.
+            - If the point is empty, check if the player can bear off a checker from the corresponding point (using the exact dice roll).
+    
+    3. Consider bearing off:
+        - If the player has checkers in their home board and all checkers are in points lower than the highest roll of the dice, they can bear off a checker from the highest point.
+    
+    4. Generate possible move combinations:
+        - Consider all possible combinations of moves based on the dice roll. For example, if the player rolled a 3 and a 4, they can make moves like [from: 3, to: 6], [from: 4, to: 8], [from: 8, to: 11], etc.
+    
+    5. Validate moves:
+        - Ensure that each move is valid according to the backgammon rules, considering the position of the opponent's checkers, the hit slot, and the target points.
+    
+    6. Present the possible moves:
+        - Provide a list of valid moves for the player to choose from.
+
+
+
+
+
+---------------
+i want to provide backgammon game play by training you 
+in order to manage all backgammon process between two users.
+
+i will define some custom functions and will give you as user queries.
+
+we need a plan. make a to do list and manage for me!
+
+-------------------
+Backgammon Basics:
+Board Setup:
+
+Backgammon is played on a board with 24 narrow triangles called points.
+Each player has 15 checkers of a distinct color.
+Starting Positions:
+
+Players set up their checkers on the board according to a specific pattern.
+The checkers move in opposite directions along the board.
+Objective:
+
+The goal is to move all your checkers around the board and bear them off before your opponent.
+Movement:
+
+Players roll two six-sided dice to determine the movement of their checkers.
+A player can move a checker the number of points shown on each die, either separately or combined.
+Legal Moves:
+
+A player can move to any point that is open or occupied only by their own checkers.
+If a player rolls the same number on both dice, they make four moves instead of two.
+Hitting and Entering:
+
+If a point is occupied by a single opposing checker, it can be hit, sending the opponent's checker to the bar.
+The opponent must then re-enter the game by rolling the dice and placing the checker in the corresponding point.
+Bearing Off:
+
+Once a player has moved all their checkers to their home board (the last six points), they can start bearing off.
+A player bears off a checker by rolling a number corresponding to the point on which the checker resides.
+Doubling Cube (Optional):
+
+Players can use a doubling cube to increase the stakes of the game.
+A player can propose to double the current stakes, and their opponent can accept or resign.
+Winning:
+
+The first player to bear off all their checkers wins.
+If the game includes a doubling cube, the winner receives points equal to the current stakes on the cube.
+Additional Rules:
+Gammons and Backgammons:
+
+If a player bears off all their checkers before the opponent bears off any, it's a gammon and scores double.
+If a player bears off all their checkers while their opponent still has checkers in the winner's home board or on the bar, it's a backgammon and scores triple.
+Automatic Doubles:
+
+If the same number is rolled on both dice in the first roll of the game, the stakes are automatically doubled.
+
+-------------------
+Backgammon Board Layout:
+Points:
+
+The board consists of 24 points arranged in a triangular pattern.
+Each player's home board is the inner quarter of the board, and the outer quarter is the opponent's home board.
+Quadrants:
+
+The board is divided into four quadrants, each containing six points.
+Quadrants are labeled as follows:
+Quadrant 1 (Q1): Player 1's home board (lower right)
+Quadrant 2 (Q2): Player 1's outer board (upper right)
+Quadrant 3 (Q3): Player 2's outer board (upper left)
+Quadrant 4 (Q4): Player 2's home board (lower left)
+Home Boards:
+
+Each player has a home board consisting of the last six points in their respective quadrants.
+The player's home board is where checkers are placed before they can be borne off.
+Bar:
+
+The bar is the center dividing line between the two halves of the board.
+When a checker is hit, it goes to the bar and must re-enter from there.
+Outer Boards:
+
+The outer boards are the sections of the board outside the home boards.
+Players move their checkers from their outer board to their home board as they advance toward bearing off.
+Pips:
+
+Pips represent the total number of points a player's checkers need to travel to reach their home board.
+The number of pips is counted based on the shortest path to the home board.
+Checker Movement:
+Checkers move in opposite directions along the board, following the numbering of the points.
+The movement is controlled by the roll of two six-sided dice.
+A player may move a single checker for each die or combine the numbers to move one checker.
+Starting Positions:
+Each player starts with 15 checkers placed on specific points:
+
+2 on the 24-point
+5 on the 13-point
+3 on the 8-point
+5 on the 6-point
+The initial setup is symmetrical for both players.
+
+Home Board and Bearing Off:
+The player's home board is where checkers are moved before being borne off.
+To bear off, a player must roll a number corresponding to the point on which the checker resides.
+Optional Doubling Cube:
+If using a doubling cube, it starts in the center with the number 64 facing up.
+The doubling cube is used to increase the stakes of the game.
+This layout provides the structure for the movement and positioning of checkers in a backgammon game. Understanding the board layout is crucial for implementing the game logic accurately.
+
+
+-----------------
+1. Moving Checkers:
+Players roll two six-sided dice to determine the number of points a checker can move.
+A player may move a single checker the number of points shown on each die, either separately or combined.
+The movement can be split between two checkers if the player chooses.
+Checkers move in opposite directions along the board:
+Player 1's checkers move from higher point numbers to lower ones.
+Player 2's checkers move from lower point numbers to higher ones.
+2. Bearing Off:
+Once a player has moved all their checkers into their home board (the last six points), they can start bearing off.
+To bear off, a player must roll a number corresponding to the point on which the checker resides in the home board.
+If a player rolls a higher number than the point where a checker is located, they bear off the checker.
+If there are no checkers on the point corresponding to the roll, the player must make a legal move using a checker from a higher-numbered point.
+3. Hitting Opponents:
+If a player lands on a point occupied by a single opposing checker, the opponent's checker is "hit."
+The hit checker is placed on the bar, and the opponent must re-enter it into the game.
+The opponent re-enters by rolling the dice and placing the checker on the corresponding point in their home board.
+A player cannot move any other checkers until all their hit checkers are back in play.
+4. Doubling (Optional):
+The doubling cube is an optional component used to increase the stakes of the game.
+At the start of the game, the doubling cube is placed in the center with the number 64 facing up.
+After a player's move, they have the option to propose to double the stakes.
+The opponent can either accept the double and continue the game at the new stakes or resign, forfeiting the current game.
+If the opponent accepts, they take control of the doubling cube, and only they can propose the next double.
+If a player resigns, the opponent wins the current game with the stakes on the doubling cube.
+Additional Notes:
+If a player rolls the same number on both dice (doubles), they make four moves instead of two.
+Gammons and backgammons can affect the scoring in games with the doubling cube.
+
+
+
+------------------

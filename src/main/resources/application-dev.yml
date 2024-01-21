@@ -1,0 +1,20 @@
+spring:
+  data:
+    mongodb:
+      host: 127.0.0.1
+      port: 27017
+
+jwt:
+  secret: parolaisaret
+  validityInDays: 365
+
+logging:
+  level:
+    org:
+      springframework:
+        web: trace
+        security: trace
+    online.lokals.lokalapi.game:
+      backgammon: trace
+      pishti: trace
+      batak: trace
