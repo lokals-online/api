@@ -24,6 +24,6 @@ public class BatakPlayerResponse {
         this.id = p.getId();
         this.username = p.getUsername();
         this.bid = p.getBid();
-        this.score = Objects.nonNull(p.getScore()) ? p.getScore().intValue() : 0;
+        this.score = Objects.nonNull(p.getScore()) ? p.getScore() : 0;
     }
 }

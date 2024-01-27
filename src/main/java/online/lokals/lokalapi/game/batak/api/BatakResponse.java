@@ -2,6 +2,7 @@ package online.lokals.lokalapi.game.batak.api;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import jakarta.annotation.Nullable;
@@ -22,7 +23,8 @@ public class BatakResponse {
     private final List<BatakPlayerResponse> players;
     private final BatakStatus status;
     private final BatakTrick trick;
-    
+    private final Map<String, Integer> scores;
+
     public BatakResponse(Batak batak, Player player) {
         this.id = batak.getId();
         this.turn = batak.getTurn();
@@ -31,7 +33,8 @@ public class BatakResponse {
         this.players = batak.getBatakPlayers().stream().map(BatakPlayerResponse::new).toList();
         this.status = batak.getStatus();
         this.trick = batak.getCurrentTrick();
-        
+        this.scores = batak.getScores();
+
         if (turn.equals(player.getId()) && batak.getStatus().equals(BatakStatus.STARTED)) {
             var initial = this.trick.getInitialType();
 
@@ -45,8 +48,12 @@ public class BatakResponse {
                 // if initial matches then same type must be played
                 var sameWithInitial = this.hand.stream().filter((Card card) -> card.getType().equals(initial)).toList();
                 if (!sameWithInitial.isEmpty()) {
+                    if (initial.equals(this.bid.getTrump())) {
+                        var sameTypeHigher = sameWithInitial.stream().filter((Card card) -> card.getNumber() > winnerMove.getCard().getNumber()).toList();
+                        this.availableCards = !sameTypeHigher.isEmpty() ? sameTypeHigher : sameWithInitial;
+                    }
                     // if trump card played on current trick then any card with the same type is playable.
-                    if (trumpPlayed) {
+                    else if (trumpPlayed) {
                         this.availableCards = sameWithInitial;
                     }
                     else {

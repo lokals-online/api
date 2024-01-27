@@ -6,6 +6,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import online.lokals.lokalapi.game.Player;
 import online.lokals.lokalapi.game.backgammon.event.BackgammonGameEvent;
+import online.lokals.lokalapi.game.backgammon.event.BackgammonMoveEvent;
 import online.lokals.lokalapi.game.batak.Batak;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -42,35 +43,34 @@ public class BackgammonService {
     // @Override
     @SneakyThrows
     public void rollDice(@Nonnull String gameId, Player player) {
-        log.trace("player[{}] is rolling dice", player.toString());
+        log.trace("{} is rolling dice", player.toString());
         Backgammon backgammon = get(gameId);
         
         assert Objects.equals(Objects.requireNonNull(backgammon.currentTurn()).getPlayerId(), player.getId());
         
         Integer[] rolledDice = backgammon.rollDice();
 
-        log.trace("player[{}] has rolled dice[]", player.toString(), rolledDice.toString());
+        log.trace("{} has rolled dice: {}", player, Arrays.toString(rolledDice));
 
         backgammonRepository.save(backgammon);
 
         BackgammonGameEvent event = BackgammonGameEvent.rollDice(backgammon.getId(), backgammon);
         simpMessagingTemplate.convertAndSend(BACKGAMMON_TOPIC_DESTINATION + backgammon.getId(), event);
 
-        Thread.sleep(2000);
+        Thread.sleep(1000);
 
         Set<BackgammonMove> possibleMoves = backgammon.possibleMoves();
         if (possibleMoves != null && possibleMoves.isEmpty()) {
             Turn changedTurn = backgammon.changeTurn();
             backgammonRepository.save(backgammon);
 
-            Thread.sleep(2000);
+            Thread.sleep(1000);
 
             BackgammonGameEvent turnHasChangedEvent = BackgammonGameEvent.turnHasChanged(backgammon.getId(), backgammon);
             simpMessagingTemplate.convertAndSend(BACKGAMMON_TOPIC_DESTINATION + backgammon.getId(), turnHasChangedEvent);
         }
     }
 
-    // @Override
     @SneakyThrows
     public void move(@Nonnull String gameId, BackgammonPlayRequest playRequest, Player player) {
         Backgammon backgammon = get(gameId);
@@ -90,6 +90,15 @@ public class BackgammonService {
         // persist move
         for (BackgammonMove move : playRequest.moves()) {
             backgammon.move(player, move);
+
+            // TODO: fix!
+            backgammonRepository.save(backgammon);
+
+            BackgammonGameEvent event = BackgammonGameEvent.move(gameId, backgammon);
+
+            simpMessagingTemplate.convertAndSend(BACKGAMMON_TOPIC_DESTINATION + backgammon.getId(), event);
+
+            Thread.sleep(500);
         }
 
         if (backgammon.isGameOver()) {
@@ -101,10 +110,11 @@ public class BackgammonService {
             return;
         }
 
-        if (backgammon.isTurnOver() || (possibleMoves == null || Objects.requireNonNull(possibleMoves).isEmpty())) {
+        if (backgammon.isTurnOver() || backgammon.possibleMoves() == null || Objects.requireNonNull(backgammon.possibleMoves()).isEmpty()) {
             Turn changedTurn = backgammon.changeTurn();
 
             log.info("turn has changed to: {}", changedTurn.getPlayerId());
+
             backgammonRepository.save(backgammon);
             BackgammonGameEvent turnHasChangedEvent = BackgammonGameEvent.turnHasChanged(backgammon.getId(), backgammon);
             simpMessagingTemplate.convertAndSend(BACKGAMMON_TOPIC_DESTINATION + backgammon.getId(), turnHasChangedEvent);
@@ -114,16 +124,14 @@ public class BackgammonService {
                 Thread.sleep(1000);
 
                 this.playForChirak(gameId);
-
-                return;
             }
         }
 
-        backgammonRepository.save(backgammon);
+//        backgammonRepository.save(backgammon);
 
-        BackgammonGameEvent event = BackgammonGameEvent.move(gameId, backgammon);
-
-        simpMessagingTemplate.convertAndSend(BACKGAMMON_TOPIC_DESTINATION + backgammon.getId(), event);
+//        BackgammonGameEvent event = BackgammonGameEvent.move(gameId, backgammon);
+//
+//        simpMessagingTemplate.convertAndSend(BACKGAMMON_TOPIC_DESTINATION + backgammon.getId(), event);
     }
 
     @SneakyThrows
@@ -141,11 +149,20 @@ public class BackgammonService {
 
             Thread.sleep(1000);
 
-            Set<BackgammonMove> possibleMoves = backgammon.possibleMoves();
-            while (!backgammon.isTurnOver() && !Objects.requireNonNull(possibleMoves).isEmpty()) {
-                Optional<BackgammonMove> firstMove = possibleMoves.stream().findFirst();
-                firstMove.ifPresent(backgammonMove -> backgammon.move(Player.chirak(), backgammonMove));
+            while (!backgammon.isTurnOver() && !Objects.requireNonNull(backgammon.possibleMoves()).isEmpty()) {
+                backgammon = get(backgammonId);
+                Optional<BackgammonMove> firstMove = backgammon.possibleMoves().stream().findFirst();
+                Backgammon finalBackgammon = backgammon;
+                firstMove.ifPresent(backgammonMove -> finalBackgammon.move(Player.chirak(), backgammonMove));
                 log.debug("selected move : [{}]", firstMove.get());
+
+                backgammonRepository.save(backgammon);
+
+                BackgammonGameEvent moveEvent = BackgammonGameEvent.move(backgammonId, backgammon);
+                simpMessagingTemplate.convertAndSend(BACKGAMMON_TOPIC_DESTINATION + backgammon.getId(), moveEvent);
+                log.debug("sent moveEvent {}", moveEvent);
+
+                Thread.sleep(1000);
             }
 
             Turn changedTurn = backgammon.changeTurn();

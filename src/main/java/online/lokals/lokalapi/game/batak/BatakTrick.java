@@ -24,11 +24,11 @@ public class BatakTrick {
     }
 
     public boolean isDone() {
-        return moves.size() == 4;
+        return this.moves.size() == 4;
     }
 
     public CardType getInitialType() {
-        if (this.moves.size() == 0) return null;
+        if (this.moves.isEmpty()) return null;
         else return this.moves.get(0).getCard().getType();
     }
 

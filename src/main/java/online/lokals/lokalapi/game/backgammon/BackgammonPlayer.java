@@ -66,7 +66,7 @@ public class BackgammonPlayer extends Player {
             this.moveFrom(move.getFrom());
         }
         else {
-            log.trace("from: {} to: {}", move.getFrom(), move.getTo());
+//            log.trace("from: {} to: {}", move.getFrom(), move.getTo());
             this.moveFrom(move.getFrom());
             this.moveTo(move.getTo());
         }

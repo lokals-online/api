@@ -134,7 +134,7 @@ public class Backgammon implements Game {
         BackgammonPlayer currentPlayer = getPlayer(player.getId());
         assert Objects.nonNull(turn) && currentPlayer.getId().equals(turn.getPlayerId());
 
-        log.trace("player[{}] is moving move:[from: {}, to: {}]}", player, move.getFrom(), move.getTo());
+        log.trace("player[{}] is moving [from: {}, to: {}]}", player, move.getFrom(), move.getTo());
 
         currentPlayer.move(move);
         BackgammonPlayer opponent = getOpponent(currentPlayer.getId());

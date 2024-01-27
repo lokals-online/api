@@ -14,6 +14,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PishtiOpponentResponse {
+    private String id;
     private String username;
     private int hand;
     private List<Card> capturedCards;
@@ -22,6 +23,7 @@ public class PishtiOpponentResponse {
 
     public PishtiOpponentResponse(PishtiPlayer pishtiOpponent) {
         this(
+            pishtiOpponent.getId(),
             pishtiOpponent.getPlayerUsername(),
             pishtiOpponent.getHand().size(),
             pishtiOpponent.getCapturedCards(),

@@ -11,7 +11,7 @@ import online.lokals.lokalapi.game.backgammon.Turn;
 import online.lokals.lokalapi.game.backgammon.event.BackgammonGameEvent;
 import online.lokals.lokalapi.game.card.Card;
 import online.lokals.lokalapi.game.pishti.api.PishtiPlayRequest;
-import online.lokals.lokalapi.game.pishti.event.PishtiEvent;
+import online.lokals.lokalapi.game.pishti.event.*;
 
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -58,22 +58,31 @@ public class PishtiService {
         log.trace("[{}] played {}", player.getUsername(), playRequest.card());
         
         pishti.play(player.getId(), playRequest.card());
-        
-        // publish card (omit for now)
-        // simpMessagingTemplate.convertAndSend(PISHTI_TOPIC_DESTINATION + pishtiId, PishtiEvent.cardPlayed(pishtiId, playRequest.card()));
 
-        // Thread.sleep(1000);
+        PishtiCardPlayedEvent cardPlayedEvent = new PishtiCardPlayedEvent(player.getId(), playRequest.card());
+        simpMessagingTemplate.convertAndSend(PISHTI_TOPIC_DESTINATION + pishtiId + "/cardPlayed", cardPlayedEvent);
+        pishtiRepository.save(pishti);
 
-        // CHECK STACK
+        Thread.sleep(500);
+
+        // CHECK PILE
         if (pishti.checkPishti()) {
             log.trace("{} made pishti by playing {}", player.getUsername(), playRequest.card());
-            // publish pishti
-//            simpMessagingTemplate.convertAndSend(PISHTI_TOPIC_DESTINATION + pishtiId, PishtiEvent.madePishti(pishtiId, player.getId()));
+            // TODO: publish pishti
+            pishtiRepository.save(pishti);
+
+            PishtiPishtiEvent pishtiPishtiEvent = new PishtiPishtiEvent(player.getId());
+            simpMessagingTemplate.convertAndSend(PISHTI_TOPIC_DESTINATION + pishtiId + "/pishti", pishtiPishtiEvent);
+            Thread.sleep(500);
         }
         else if (pishti.checkCapture()) {
             log.trace("{} has captured by playing {}", player.getUsername(), playRequest.card());
-            // publish capture
-//            simpMessagingTemplate.convertAndSend(PISHTI_TOPIC_DESTINATION + pishtiId, PishtiEvent.captured(pishtiId, player.getId()));
+
+            pishtiRepository.save(pishti);
+
+            PishtiCapturedEvent pishtiCapturedEvent = new PishtiCapturedEvent(player.getId());
+            simpMessagingTemplate.convertAndSend(PISHTI_TOPIC_DESTINATION + pishtiId + "/captured", pishtiCapturedEvent);
+            Thread.sleep(500);
         }
 
         if (pishti.checkGameEnded()) {
@@ -89,21 +98,33 @@ public class PishtiService {
             log.trace("round ended....");
             pishti.endRound();
 
-            log.trace("checking game ended!");
-            
-            pishti.startNewSeries();
+            pishti.startNewRound();
 
             pishtiRepository.save(pishti);
-            simpMessagingTemplate.convertAndSend(PISHTI_TOPIC_DESTINATION + pishtiId, PishtiEvent.changeTurn(pishtiId, pishti.getTurn()));
+
+            simpMessagingTemplate.convertAndSend(PISHTI_TOPIC_DESTINATION + pishtiId, Void.class);
         }
         else {
-            // check hands
-            pishti.dealHands();
             // change turn
             String changedTurn = pishti.changeTurn();
 
-            pishtiRepository.save(pishti);
-            simpMessagingTemplate.convertAndSend(PISHTI_TOPIC_DESTINATION + pishtiId, PishtiEvent.changeTurn(pishtiId, pishti.getTurn()));
+            // check hands
+            if (pishti.getFirstPlayer().getHand().isEmpty() && pishti.getSecondPlayer().getHand().isEmpty()) {
+                pishti.dealHands();
+
+                pishtiRepository.save(pishti);
+
+                simpMessagingTemplate.convertAndSend(PISHTI_TOPIC_DESTINATION + pishtiId, Void.class);
+            }
+            else {
+                pishtiRepository.save(pishti);
+
+                PishtiTurnChangedEvent pishtiTurnChangedEvent = new PishtiTurnChangedEvent(changedTurn);
+                simpMessagingTemplate.convertAndSend(PISHTI_TOPIC_DESTINATION + pishtiId + "/turnChanged", pishtiTurnChangedEvent);
+            }
+
+            Thread.sleep(500);
+
         }
 
         // this should be aop

@@ -87,28 +87,36 @@ public class BatakService {
     public void play(String batakId, Player player, Card card) {
         Batak batak = batakRepository.findById(batakId).orElseThrow();
 
+        log.trace("player[{}] played card[{}]", player, card);
+
         // validate(player, card);
-        // turn === player.id
+         if (batak.getCurrentTrick().getMoves().stream().anyMatch(batakMove -> batakMove.getPlayerId().equals(player.getId()))) {
+             return;
+         }
         // (stack.last < card) then check player hand
         // (stack.first.type != card.type) 
         // (first card && trump card) then check trump is played before
 
         batak.play(player.getId(), card);
+        batakRepository.save(batak);
 
-        if (batak.gameEnded()) {
-            batak.endGame();
-            batak.setStatus(BatakStatus.ENDED);
-            // publish game end
-        }
-        else if (batak.currentTrickEnded()) {
-            batak.newTrick();
+//        simpMessagingTemplate.convertAndSend(BATAK_TOPIC_DESTINATION + batakId, BatakEvent.changeTurn(batakId, batak.getTurn()));
+
+        if (batak.currentTrickEnded()) {
+            batak.endTrick();
+
+            if (batak.gameEnded()) {
+                batak.setStatus(BatakStatus.ENDED);
+            }
+            else {
+                batak.newTrick();
+            }
         }
         else {
             batak.changeTurn();
         }
 
         batakRepository.save(batak);
-
         simpMessagingTemplate.convertAndSend(BATAK_TOPIC_DESTINATION + batakId, BatakEvent.changeTurn(batakId, batak.getTurn()));
     }
 

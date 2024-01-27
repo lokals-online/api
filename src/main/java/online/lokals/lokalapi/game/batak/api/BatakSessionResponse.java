@@ -18,6 +18,7 @@ public class BatakSessionResponse {
     private BatakSettings settings; 
     private String currentMatchId;
     private Map<String, Integer> scores;
+    private String status;
     
     public BatakSessionResponse(BatakSession batakSession) {
         this.id = batakSession.getId();
@@ -25,6 +26,7 @@ public class BatakSessionResponse {
         this.settings = batakSession.getSettings();
         this.currentMatchId = batakSession.getCurrentMatch() != null ? batakSession.getCurrentMatch().getId() : null;
         this.scores = batakSession.getScores();
+        this.status = batakSession.getStatus().name();
     }
 
 }

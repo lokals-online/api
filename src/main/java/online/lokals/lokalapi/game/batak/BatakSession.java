@@ -19,6 +19,8 @@ import online.lokals.lokalapi.game.GameSession;
 import online.lokals.lokalapi.game.LokalGames;
 import online.lokals.lokalapi.game.Player;
 
+import static java.util.function.Predicate.not;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -89,8 +91,9 @@ public class BatakSession implements GameSession {
 
     public Map<String, Integer> getScores() {
         return this.matches.stream()
-            .map(Batak::getScores)
-            .flatMap(map -> map.entrySet().stream())
-            .collect(Collectors.groupingBy(Map.Entry::getKey, Collectors.summingInt(Map.Entry::getValue)));
+                .filter(Batak::gameEnded)
+                .map(Batak::getScores)
+                .flatMap(map -> map.entrySet().stream())
+                .collect(Collectors.groupingBy(Map.Entry::getKey, Collectors.summingInt(Map.Entry::getValue)));
     }
 }

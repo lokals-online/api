@@ -45,6 +45,10 @@ public class PishtiPlayer {
         this.rounds.add(new PishtiRound());
     }
 
+    public String getId() {
+        return this.getPlayer().getId();
+    }
+
     public String getPlayerUsername() {
         return this.getPlayer().getUsername();
     }

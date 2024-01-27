@@ -91,27 +91,27 @@ public class BatakSessionService {
 
         if (Objects.nonNull(batakSession.getCurrentMatch()) &&
                 batakSession.getCurrentMatch().getStatus().equals(BatakStatus.ENDED)) {
-            // create new batak
-            Batak newMatch = batakService.newMatch(batakSession);
 
-            batakSession.addMatch(newMatch);
-            batakSession.setStatus(BatakSessionStatus.WAITING_BETS);
+            Optional<Map.Entry<String, Integer>> winner = batakSession.getScores().entrySet().stream()
+                    .filter(entrySet -> entrySet.getValue() >= batakSession.getSettings().getRaceTo())
+                    .sorted(Map.Entry.comparingByValue(Comparator.naturalOrder()))
+                    .findFirst();
 
-            // for new game!
+            if (winner.isPresent()) {
+                batakSession.setStatus(BatakSessionStatus.ENDED);
+            }
+            else {
+                // create new batak
+                Batak newMatch = batakService.newMatch(batakSession);
+
+                batakSession.addMatch(newMatch);
+                batakSession.setStatus(BatakSessionStatus.WAITING_BETS);
+            }
+
+            batakSessionRepository.save(batakSession);
+
             simpMessagingTemplate.convertAndSend(BATAK_SESSION_TOPIC_DESTINATION + batakSession.getId(), batakSession);
         }
-
-        Optional<Map.Entry<String, Integer>> winner = batakSession.getScores().entrySet().stream()
-                .filter(entrySet -> entrySet.getValue() > batakSession.getSettings().getRaceTo())
-                .sorted(Map.Entry.comparingByValue(Comparator.naturalOrder()))
-                .findFirst();
-
-        if (winner.isPresent()) {
-            batakSession.setStatus(BatakSessionStatus.ENDED);
-            simpMessagingTemplate.convertAndSend(BATAK_SESSION_TOPIC_DESTINATION + batakSession.getId(), batakSession);
-        }
-
-        batakSessionRepository.save(batakSession);
     }
 
     public void restart(@Nonnull String batakSessionId) {

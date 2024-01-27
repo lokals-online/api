@@ -34,7 +34,7 @@ public class Pishti {
     // playerId
     private String turn;
 
-    private List<Card> stack = new ArrayList<>();
+    private List<Card> pile = new ArrayList<>();
 
     private List<Card> cards = new ArrayList<>();
 
@@ -55,9 +55,9 @@ public class Pishti {
         this.cards.clear();
         this.shuffleNewCards();
 
-        // set stack
+        // set pile
         List<Card> pickedCards = pickFromCards();
-        this.stack.addAll(pickedCards);
+        this.pile.addAll(pickedCards);
 
         // deal 4 cards to each
         this.dealHands();
@@ -105,27 +105,27 @@ public class Pishti {
         player.played(card);
 
         // add to deck
-        this.stack.add(card);
+        this.pile.add(card);
     }
 
     public void endRound() {
-        log.trace("ending current round. the stack has {} cards. ", this.stack.size());
+        log.trace("ending current round. the stack has {} cards. ", this.pile.size());
         // remaining cards are belong to last capturing player
-        if (!this.stack.isEmpty()) {
-            log.trace("the last one is: {}", this.stack.get(this.stack.size()-1));
-            if ((this.stack.size() % 2) == 0) {
+        if (!this.pile.isEmpty()) {
+            log.trace("the last one is: {}", this.pile.get(this.pile.size()-1));
+            if ((this.pile.size() % 2) == 0) {
                 // if stack elements count is even, then the last player is the last capture
-                getPlayer(this.turn).get().capture(this.stack);
+                getPlayer(this.turn).get().capture(this.pile);
             }
             else {
-                getOpponent(this.turn).get().capture(this.stack);
+                getOpponent(this.turn).get().capture(this.pile);
             }
-            this.stack.clear();
+            this.pile.clear();
         }
         this.firstPlayer.endRound();
         this.secondPlayer.endRound();
 
-        assert this.stack.isEmpty() &&
+        assert this.pile.isEmpty() &&
                 this.cards.isEmpty() &&
                 this.firstPlayer.getHand().isEmpty() &&
                 this.secondPlayer.getHand().isEmpty();
@@ -138,14 +138,14 @@ public class Pishti {
     }
 
     public boolean checkPishti() {
-        boolean isPishti = this.stack.size() == 2 && this.stack.get(0).getNumber() == this.stack.get(1).getNumber();
+        boolean isPishti = this.pile.size() == 2 && this.pile.get(0).getNumber() == this.pile.get(1).getNumber();
 
         if (isPishti) {
             // player add pishti
-            getPlayer(turn).get().pishti(this.stack.get(0), this.stack.get(1));
+            getPlayer(turn).get().pishti(this.pile.get(0), this.pile.get(1));
 
             // clear stack
-            this.stack.clear();
+            this.pile.clear();
 
             return true;
         }
@@ -155,17 +155,17 @@ public class Pishti {
     }
 
     public boolean checkCapture() {
-        if (this.stack.size() >= 2) {
-            int size = this.stack.size();
-            Card lastCard = this.stack.get(size - 1);
+        if (this.pile.size() >= 2) {
+            int size = this.pile.size();
+            Card lastCard = this.pile.get(size - 1);
 
-            boolean isCapture = (lastCard.getNumber() == 11) || this.stack.get(size - 2).getNumber() == lastCard.getNumber();
+            boolean isCapture = (lastCard.getNumber() == 11) || this.pile.get(size - 2).getNumber() == lastCard.getNumber();
 
             if (isCapture) {
                 // player add capture
-                getPlayer(turn).get().capture(this.stack);
+                getPlayer(turn).get().capture(this.pile);
                 // clear stack
-                this.stack.clear();
+                this.pile.clear();
                 return true;
             }
             else {
@@ -235,10 +235,12 @@ public class Pishti {
     }
 
     public boolean checkRoundEnded() {
-        return (this.cards.isEmpty()) && (this.firstPlayer.getHand().isEmpty()) && this.secondPlayer.getHand().isEmpty();
+        return this.cards.isEmpty() &&
+                this.firstPlayer.getHand().isEmpty() &&
+                this.secondPlayer.getHand().isEmpty();
     }
 
-    public void startNewSeries() {
+    public void startNewRound() {
         this.start();
     }
 

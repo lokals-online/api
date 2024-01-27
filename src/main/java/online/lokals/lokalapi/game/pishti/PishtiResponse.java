@@ -27,7 +27,7 @@ public class PishtiResponse {
     public PishtiResponse(Pishti pishti, Player player) {
         this.id = pishti.getId();
         this.turn = pishti.getTurn();
-        this.stack = pishti.getStack();
+        this.stack = pishti.getPile();
         this.remainingCardCount = pishti.getCards().size();
 
         final Optional<PishtiPlayer> currentPlayerOptional = pishti.getPlayer(player.getId());

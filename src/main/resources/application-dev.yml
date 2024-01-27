@@ -12,9 +12,9 @@ logging:
   level:
     org:
       springframework:
-        web: trace
-        security: trace
+        web: warn
+        security: warn
     online.lokals.lokalapi.game:
-      backgammon: trace
-      pishti: trace
-      batak: trace
+      backgammon: warn
+      pishti: warn
+      batak: warn

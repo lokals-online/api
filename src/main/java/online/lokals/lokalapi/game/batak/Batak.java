@@ -14,9 +14,6 @@ import online.lokals.lokalapi.game.Player;
 import online.lokals.lokalapi.game.card.Card;
 import online.lokals.lokalapi.game.card.CardType;
 
-import static java.util.function.Predicate.not;
-import static org.springframework.data.util.Optionals.ifPresentOrElse;
-
 @Slf4j
 @NoArgsConstructor
 @Getter
@@ -136,28 +133,35 @@ public class Batak {
         getPlayer(playerId).remove(card);
     }
     
-    public void newTrick() {
+    public void endTrick() {
         String winner = this.getCurrentTrick().winnerMove(this.bid.getTrump()).getPlayerId();
-        this.turn = winner;
         getPlayer(winner).addWon(this.tricks.size()-1);
+    }
+
+    public void newTrick() {
+        this.turn = this.getCurrentTrick().winnerMove(this.bid.getTrump()).getPlayerId();
         this.tricks.add(new BatakTrick());
     }
 
     public boolean currentTrickEnded() {
-        return this.getCurrentTrick().isDone();
+        return Objects.requireNonNull(getCurrentTrick()).isDone();
     }
     
     public boolean gameEnded() {
-        return (this.currentTrickEnded() && this.tricks.size() == 13);
+        return (this.tricks.size() == 13 && this.currentTrickEnded());
     }
 
     public Map<String, Integer> getScores() {
-        return batakPlayers.stream().collect(Collectors.toMap(BatakPlayer::getId, batakPlayer -> {
-            if (this.bid.getPlayerId().equals(batakPlayer.getId())) {
-                return (this.bid.getValue() > batakPlayer.getScore()) ? this.bid.getValue()*(-1) : this.bid.getValue();
-            }
-            else return (batakPlayer.getScore() < 2) ? this.bid.getValue()*(-1) : batakPlayer.getScore();
-        }));
+        return batakPlayers.stream()
+                .collect(Collectors.toMap(BatakPlayer::getId,
+                        batakPlayer -> {
+                            if (this.status.equals(BatakStatus.WAITING_TRUMP) || this.status.equals(BatakStatus.BIDDING)) return 0;
+
+                            if (this.bid.getPlayerId().equals(batakPlayer.getId())) {
+                                return (this.bid.getValue() > batakPlayer.getScore()) ? this.bid.getValue()*(-1) : batakPlayer.getScore();
+                            }
+                            else return (batakPlayer.getScore() < 1) ? this.bid.getValue()*(-1) : batakPlayer.getScore();
+                        }));
     }
 
     @Override
