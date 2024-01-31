@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import online.lokals.lokalapi.game.backgammon.BackgammonSession;
 import online.lokals.lokalapi.game.backgammon.BackgammonSessionResponse;
 import online.lokals.lokalapi.game.backgammon.api.NewBackgammonRequest;
+import online.lokals.lokalapi.users.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -29,14 +30,17 @@ public class PishtiSessionController {
 
     private final PishtiSessionService pishtiSessionService;
     private final PishtiService pishtiService;
+    private final UserService userService;
 
     @PostMapping
     private ResponseEntity<PishtiSessionResponse> create(
             @RequestBody @Valid NewPishtiRequest newPishtiRequest,
             @AuthenticationPrincipal User currentUser
     ) {
+        User home = userService.getOrCreatePlayer(currentUser);
+
         PishtiSession pishtiSession = pishtiSessionService.create(
-                currentUser.toPlayer(),
+                home,
                 newPishtiRequest.getOpponent(),
                 newPishtiRequest.getSettings());
 
@@ -52,7 +56,9 @@ public class PishtiSessionController {
 
     @PostMapping("/{sessionId}/sit")
     private ResponseEntity<Void> sit(@PathVariable String sessionId, @AuthenticationPrincipal User currentUser) {
-        pishtiSessionService.sit(sessionId, currentUser.toPlayer());
+        User away = userService.getOrCreatePlayer(currentUser);
+
+        pishtiSessionService.sit(sessionId, currentUser);
         
         return ResponseEntity.ok().build();
     }

@@ -19,12 +19,8 @@ public class UserAccountService implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(@Nonnull String username) throws UsernameNotFoundException {
 
-        try {
-            return userService.findByUsername(username);
-        }
-        catch (ResourceNotFoundException e) {
-            throw new UsernameNotFoundException(e.getMessage(), e);
-        }
+        return userService.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User with username:{%s}".formatted(username)));
     }
 
     public UserDetails loadUserById(@Nonnull String id) {

@@ -2,8 +2,10 @@ package online.lokals.lokalapi.game.backgammon.api;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import online.lokals.lokalapi.game.Player;
 import online.lokals.lokalapi.game.backgammon.*;
 import online.lokals.lokalapi.users.User;
+import online.lokals.lokalapi.users.UserService;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -14,6 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 @RequiredArgsConstructor
 @RestController
@@ -23,14 +26,17 @@ public class BackgammonSessionController {
     private final BackgammonSessionService backgammonSessionService;
     private final BackgammonService backgammonService;
 
+    private final UserService userService;
+
     @PostMapping
     private ResponseEntity<BackgammonSessionResponse> create(
             @RequestBody @Valid NewBackgammonRequest newBackgammonRequest,
             @AuthenticationPrincipal User currentUser
     ) {
+        User home = userService.getOrCreatePlayer(currentUser);
 
         BackgammonSession backgammonSession = backgammonSessionService.create(
-                currentUser.toPlayer(),
+                home,
                 newBackgammonRequest.getOpponent(),
                 newBackgammonRequest.getSettings()
         );
@@ -61,7 +67,9 @@ public class BackgammonSessionController {
 
     @PostMapping("/{sessionId}/sit")
     private ResponseEntity<Void> sit(@PathVariable String sessionId, @AuthenticationPrincipal User currentUser) {
-        backgammonSessionService.sit(sessionId, currentUser.toPlayer());
+        User away = userService.getOrCreatePlayer(currentUser);
+
+        backgammonSessionService.sit(sessionId, away);
 
         return ResponseEntity.ok().build();
     }

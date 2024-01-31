@@ -8,6 +8,7 @@ import lombok.Setter;
 import online.lokals.lokalapi.game.Player;
 import online.lokals.lokalapi.game.batak.BatakSession;
 import online.lokals.lokalapi.game.batak.BatakSettings;
+import online.lokals.lokalapi.users.User;
 
 @Getter
 @Setter
@@ -22,7 +23,7 @@ public class BatakSessionResponse {
     
     public BatakSessionResponse(BatakSession batakSession) {
         this.id = batakSession.getId();
-        this.players = batakSession.getPlayers();
+        this.players = batakSession.getUsers().stream().map(User::toPlayer).toList();
         this.settings = batakSession.getSettings();
         this.currentMatchId = batakSession.getCurrentMatch() != null ? batakSession.getCurrentMatch().getId() : null;
         this.scores = batakSession.getScores();

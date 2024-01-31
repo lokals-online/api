@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
+import online.lokals.lokalapi.users.User;
 import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.MongoId;
@@ -36,15 +37,17 @@ public class PishtiSession implements GameSession {
     @DBRef
     private List<Pishti> matches = new ArrayList<>();
 
-    private Player home;
+    @DBRef
+    private User home;
 
-    private Player away;
+    @DBRef
+    private User away;
 
     private PishtiSettings settings;
 
     private PishtiSessionStatus status;
 
-    public PishtiSession(@Nonnull String tableId, @Nonnull Player home, @Nullable Player away, PishtiSettings settings) {
+    public PishtiSession(@Nonnull String tableId, @Nonnull User home, @Nullable User away, PishtiSettings settings) {
         this.tableId = tableId;
         this.home = home;
         this.away = away;
@@ -52,14 +55,9 @@ public class PishtiSession implements GameSession {
         this.status = PishtiSessionStatus.WAITING;
     }
 
-    public String getTitle() {
-        return home.getUsername() + " vs. " + (Objects.isNull(away) ? "?" : away.getUsername());
-    }
-
-    @JsonIgnore
-    public List<Player> getPlayers() {
-        return Arrays.asList(home, away);
-    }
+//    public User getAway() {
+//        return Objects.requireNonNullElse(away, User.chirak());
+//    }
 
     public void addMatch(Pishti pishti) {
         this.matches.add(pishti);
@@ -75,7 +73,7 @@ public class PishtiSession implements GameSession {
                 .stream()
                 .filter(pishti -> {
                     if (Objects.nonNull(pishti.getWinner()) && pishti.checkGameEnded()) {
-                        return pishti.getWinner().equals(home);
+                        return pishti.getWinner().equals(home.toPlayer());
                     }
                     else {
                         return false;
@@ -90,7 +88,7 @@ public class PishtiSession implements GameSession {
                 .stream()
                 .filter(pishti -> {
                     if (Objects.nonNull(pishti.getWinner()) && pishti.checkGameEnded()) {
-                        return pishti.getWinner().equals(away);
+                        return pishti.getWinner().equals(getAway().toPlayer());
                     }
                     else {
                         return false;
@@ -104,26 +102,7 @@ public class PishtiSession implements GameSession {
         return LokalGames.PISHTI.getKey();
     }
 
-    // @Override
-    // public String getMatchId() {
-    //     if (Objects.nonNull(getCurrentMatch())) return getCurrentMatch().getId();
-    //     else return null;
-    // }
-
-    // @Override
-    public boolean removePlayer(@NotNull String playerId) {
-        if (home != null && home.getId().equals(playerId)) {
-            home = null;
-            return true;
-        }
-        else if (away != null && away.getId().equals(playerId)) {
-            away = null;
-            return true;
-        }
-        else return false;
-    }
-
     public boolean playingWithChirak() {
-        return Objects.nonNull(away) && away.getId().equals("chirak");
+        return Objects.nonNull(away) && getAway().getId().equals("chirak");
     }
 }

@@ -74,6 +74,8 @@ public class Batak {
         this.status = BatakStatus.STARTED;
         this.turn = this.getBid().getPlayerId();
         this.tricks.add(new BatakTrick());
+
+        log.trace("starting game[{}] with {}", this.id, this.turn);
     }
 
     public void bid(Player player, Integer betValue) {
@@ -86,7 +88,7 @@ public class Batak {
 
     public void changeTurn() {
         int turnPlayerIndex = this.batakPlayers.indexOf(getPlayer(this.turn));
-        log.debug("TURN INDEX => {}", turnPlayerIndex);
+//        log.debug("TURN INDEX => {}", turnPlayerIndex);
         this.turn = this.batakPlayers.get((turnPlayerIndex+1) % 4).getId();
 
         log.debug("turn has changed from[{}] to[{}]", turnPlayerIndex, ((turnPlayerIndex+1) % 4));
@@ -113,7 +115,7 @@ public class Batak {
 //                        () -> this.turn = this.getBid().getPlayerId()
 //                );
 
-        log.debug("turn has changed from[{}] to[{}]", turnPlayerIndex, ((turnPlayerIndex+1) % 4));
+        log.debug("bid turn has changed from[{}] to[{}]", turnPlayerIndex, ((turnPlayerIndex+1) % 4));
     }
 
     public BatakPlayer getPlayer(String playerId) {

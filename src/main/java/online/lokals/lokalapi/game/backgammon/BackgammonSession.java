@@ -11,6 +11,7 @@ import online.lokals.lokalapi.game.LokalGames;
 import online.lokals.lokalapi.game.GameSession;
 import online.lokals.lokalapi.game.Player;
 import online.lokals.lokalapi.game.batak.Batak;
+import online.lokals.lokalapi.users.User;
 import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.MongoId;
@@ -31,9 +32,11 @@ public class BackgammonSession implements GameSession {
     @DBRef
     private List<Backgammon> matches = new ArrayList<>();
 
-    private Player home;
+    @DBRef
+    private User home;
 
-    private Player away;
+    @DBRef
+    private User away;
 
     private Integer homeFirstDice;
     private Integer awayFirstDice;
@@ -42,7 +45,7 @@ public class BackgammonSession implements GameSession {
 
     private BackgammonSessionStatus status;
 
-    public BackgammonSession(@Nonnull Player home, @Nullable Player away, BackgammonSettings settings) {
+    public BackgammonSession(@Nonnull User home, @Nullable User away, BackgammonSettings settings) {
         this.tableId = home.getId(); // TODO: tables belong to home player!
         this.home = home;
         this.away = away;
@@ -51,6 +54,10 @@ public class BackgammonSession implements GameSession {
         this.status = (away == null) ?
                 BackgammonSessionStatus.WAITING_OPPONENT :
                 BackgammonSessionStatus.WAITING;
+    }
+
+    public User getAway() {
+        return Objects.requireNonNullElse(away, User.chirak());
     }
 
     public void addMatch(Backgammon backgammon) {
@@ -76,8 +83,8 @@ public class BackgammonSession implements GameSession {
         return this.getMatches()
                 .stream()
                 .filter(backgammon -> {
-                    if (Objects.nonNull(backgammon.getWinner()) && backgammon.isGameOver() && Objects.nonNull(this.away)) {
-                        return backgammon.getWinner().getId().equals(away.getId());
+                    if (Objects.nonNull(backgammon.getWinner()) && backgammon.isGameOver() && Objects.nonNull(getAway())) {
+                        return backgammon.getWinner().getId().equals(getAway().getId());
                     }
                     else {
                         return false;
@@ -85,29 +92,6 @@ public class BackgammonSession implements GameSession {
                 })
                 .map(Backgammon::getMultiply)
                 .reduce(0, Integer::sum);
-    }
-
-    public boolean isNotEnded() {
-        if (this.getStatus() == null) return false;
-
-        return this.getStatus().equals(BackgammonSessionStatus.ENDED);
-    }
-
-    @JsonIgnore
-    public List<Player> getPlayers() {
-        return Arrays.asList(home, away);
-    }
-
-    public Map<String, Integer> getScoreBoard() {
-        Map<String, Integer> scoreBoard = new HashMap<String, Integer>();
-        
-        scoreBoard.put(this.home.getId(), this.getHomeScore());
-        
-        if (Objects.nonNull(this.away)) {
-            scoreBoard.put(this.away.getId(), this.getAwayScore());
-        }
-        
-        return scoreBoard;
     }
 
     @Nullable
@@ -124,21 +108,6 @@ public class BackgammonSession implements GameSession {
         this.matches.set(this.matches.size()-1, backgammon);
     }
 
-    @Nullable
-    public Player getPreviousWinner() {
-        if (this.matches == null || this.matches.isEmpty()) return null;
-
-        for (int i = (this.matches.size()-1); i >= 0; i--) {
-            Backgammon backgammon = this.matches.get(i);
-
-            if ((backgammon.isGameOver()) && (backgammon.getWinner() != null)) {
-                return backgammon.getWinner();
-            }
-        }
-
-        return null;
-    }
-
     public boolean isReady() {
         return homeFirstDice != null &&
                 awayFirstDice != null &&
@@ -150,11 +119,11 @@ public class BackgammonSession implements GameSession {
     @Nullable
     public Player getFirstPlayer() {
         if ((homeFirstDice == null) || (awayFirstDice == null)) return null;
-        return (homeFirstDice > awayFirstDice) ? home : away;
+        return (homeFirstDice > awayFirstDice) ? home.toPlayer() : getAway().toPlayer();
     }
     public Player getSecondPlayer() {
         if ((homeFirstDice == null) || (awayFirstDice == null)) return null;
-        return (awayFirstDice > homeFirstDice) ? home : away;
+        return (awayFirstDice > homeFirstDice) ? home.toPlayer() : getAway().toPlayer();
     }
 
     @Override
@@ -162,26 +131,11 @@ public class BackgammonSession implements GameSession {
         return LokalGames.BACKGAMMON.getKey();
     }
 
-    // @Override
-    public boolean removePlayer(@NotNull String playerId) {
-        if (home != null && home.getId().equals(playerId)) {
-            home = null;
-            return true;
-        }
-        else if (away != null && away.getId().equals(playerId)) {
-            away = null;
-            return true;
-        }
-        else return false;
-    }
-
     public boolean hasEnded() {
         return getHomeScore() >= this.settings.raceTo || getAwayScore() >= this.settings.raceTo;
-        
-        // scoreBoard.values().stream().anyMatch((Integer i) -> i >= backgammonSession.getSettings().getRaceTo());
     }
 
     public boolean playingWithChirak() {
-        return Objects.requireNonNull(away).getId().equals("chirak");
+        return getAway().getId().equals("chirak");
     }
 }

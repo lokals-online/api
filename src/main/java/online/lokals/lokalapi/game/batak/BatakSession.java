@@ -3,10 +3,9 @@ package online.lokals.lokalapi.game.batak;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
+import online.lokals.lokalapi.users.User;
 import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.MongoId;
@@ -18,8 +17,6 @@ import lombok.Setter;
 import online.lokals.lokalapi.game.GameSession;
 import online.lokals.lokalapi.game.LokalGames;
 import online.lokals.lokalapi.game.Player;
-
-import static java.util.function.Predicate.not;
 
 @Getter
 @Setter
@@ -35,21 +32,22 @@ public class BatakSession implements GameSession {
     @DBRef
     private List<Batak> matches = new ArrayList<>();
 
-    private List<Player> players = new ArrayList<>(4);
+    @DBRef
+    private List<User> users = new ArrayList<>(4);
 
     private BatakSettings settings;
 
     private BatakSessionStatus status;
 
-    public BatakSession(@Nonnull String tableId, @Nonnull Player player, BatakSettings settings) {
+    public BatakSession(@Nonnull String tableId, @Nonnull User user, BatakSettings settings) {
         this.tableId = tableId;
-        this.players.add(player);
+        this.users.add(user);
         this.settings = settings;
         this.status = BatakSessionStatus.WAITING_PLAYERS;
     }
 
     public boolean isReadyToStart() {
-        return players.size() == 4;
+        return users.size() == 4;
     }
 
     @Override
@@ -57,12 +55,12 @@ public class BatakSession implements GameSession {
         return LokalGames.BATAK.getKey();
     }
 
-    public void addPlayer(Player player) {
+    public void addUser(User user) {
         if (this.isReadyToStart()) {
             throw new IllegalArgumentException("SIT HAS TAKEN!");
         }
 
-        this.players.add(player);
+        this.users.add(user);
     }
 
     public void addMatch(Batak batak) {
@@ -70,11 +68,7 @@ public class BatakSession implements GameSession {
     }
 
     public void removePlayer(Player player) {
-        this.players.remove(player);
-    }
-
-    public boolean removePlayerById(String playerId) {
-        return this.players.removeIf((Player p) -> p.getId().equals(playerId));
+        this.users.remove(player);
     }
 
     public int getDealerIndex() {

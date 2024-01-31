@@ -6,6 +6,7 @@ import java.util.Objects;
 
 import jakarta.validation.constraints.NotNull;
 import online.lokals.lokalapi.game.pishti.api.PishtiSessionResponse;
+import online.lokals.lokalapi.users.User;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,18 +34,17 @@ public class PishtiSessionService {
         return pishtiSessionRepository.findPishtiSessionByStatus(PishtiSessionStatus.WAITING);
     }
 
-    public PishtiSession create(@Nonnull Player homePlayer, @NotNull String opponent, Map<String, Object> gameSettings) {
+    public PishtiSession create(@Nonnull User homePlayer, @NotNull String opponent, Map<String, Object> gameSettings) {
 
-        Player awayPlayer = Player.chirak().getId().equals(opponent) ? Player.chirak() : null;
+//        Player awayPlayer = Player.chirak().getId().equals(opponent) ? Player.chirak() : null;
+        User away = User.chirak().getId().equals(opponent) ? User.chirak() : null;
 
-        PishtiSession pishtiSession = new PishtiSession(homePlayer.getId(), homePlayer, awayPlayer, new PishtiSettings(gameSettings));
+        PishtiSession pishtiSession = new PishtiSession(homePlayer.getId(), homePlayer, away, new PishtiSettings(gameSettings));
 
         pishtiSessionRepository.save(pishtiSession);
 
         if (pishtiSession.playingWithChirak()) {
             createNew(pishtiSession);
-
-
         }
 
         return pishtiSession;
@@ -55,14 +55,14 @@ public class PishtiSessionService {
     }
 
     @Transactional
-    public void sit(@Nonnull String pishtiSessionId, Player opponentPlayer) {
+    public void sit(@Nonnull String pishtiSessionId, User opponent) {
         PishtiSession pishtiSession = pishtiSessionRepository.findById(pishtiSessionId).orElseThrow();
 
         if (Objects.nonNull(pishtiSession.getAway()) && !pishtiSession.playingWithChirak()) {
             throw new IllegalArgumentException("pishti session[{}] has an away player already!");
         }
 
-        pishtiSession.setAway(opponentPlayer);
+        pishtiSession.setAway(opponent);
 
         createNew(pishtiSession);
     }

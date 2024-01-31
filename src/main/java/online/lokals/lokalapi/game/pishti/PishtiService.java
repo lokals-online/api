@@ -33,7 +33,7 @@ public class PishtiService {
     private final PishtiRepository pishtiRepository;
 
     Pishti newMatch(PishtiSession pishtiSession) {
-        Pishti pishti = new Pishti(pishtiSession.getHome(), pishtiSession.getAway());
+        Pishti pishti = new Pishti(pishtiSession.getHome().toPlayer(), pishtiSession.getAway().toPlayer());
 
         pishti.start();
 

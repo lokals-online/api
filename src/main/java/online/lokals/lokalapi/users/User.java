@@ -31,6 +31,7 @@ public class User implements UserDetails {
     public static final SimpleGrantedAuthority USER_ROLE = new SimpleGrantedAuthority("ROLE_USER");
 
     public static final String OYUNCU_USERNAME = "oyuncu";
+    public static final String ANONYMOUS_PASSWORD = "anonymous_password";
 
     public static final long validDateStartsAtInMilli = ZonedDateTime.of(2023,9,1,0,0,0,0, ZoneId.systemDefault()).toInstant().toEpochMilli();
 
@@ -54,8 +55,15 @@ public class User implements UserDetails {
         this.role = USER_ROLE;
     }
 
+    public User(String id, String username, String encodedPassword) {
+        this.id = id;
+        this.username = username;
+        this.password = encodedPassword;
+        this.role = USER_ROLE;
+    }
+
     public static User oyuncu() {
-        final User oyuncu = new User(OYUNCU_USERNAME, "anonymous_password");
+        final User oyuncu = new User(OYUNCU_USERNAME, ANONYMOUS_PASSWORD);
 
         long now = System.currentTimeMillis();
         oyuncu.setId("oyuncu%d".formatted(now));
@@ -63,6 +71,10 @@ public class User implements UserDetails {
         oyuncu.role = OYUNCU_ROLE;
 
         return oyuncu;
+    }
+
+    public static User chirak() {
+        return new User("chirak", "çırak", ANONYMOUS_PASSWORD);
     }
 
     public static boolean isOyuncu(String lokalUserId) {

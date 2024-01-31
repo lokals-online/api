@@ -17,4 +17,4 @@ logging:
     online.lokals.lokalapi.game:
       backgammon: warn
       pishti: warn
-      batak: warn
+      batak: trace

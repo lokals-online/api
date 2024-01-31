@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 
 @Slf4j
@@ -19,14 +20,11 @@ public class UserService {
 
     private final UserRepository userRepository;
 
-    private final LokalService lokalService;
-
 //    @Getter
 //    private final Set<Long> registrationPool;
 
-    public UserService(@Autowired UserRepository userRepository, @Autowired LokalService lokalService) {
+    public UserService(@Autowired UserRepository userRepository) {
         this.userRepository = userRepository;
-        this.lokalService = lokalService;
 //        this.registrationPool = new HashSet<>();
     }
 
@@ -35,9 +33,24 @@ public class UserService {
             .orElseThrow(() -> new ResourceNotFoundException("User with id:{%s}".formatted(id)));
     }
 
-    public User findByUsername(@Nonnull String username) throws ResourceNotFoundException {
-        return userRepository.findByUsername(username)
-            .orElseThrow(() -> new ResourceNotFoundException("User with username:{%s}".formatted(username)));
+    public Optional<User> findByIdOptional(@Nonnull String id) {
+        return userRepository.findById(id);
+    }
+
+    public Optional<User> findByUsername(@Nonnull String username) throws ResourceNotFoundException {
+        return userRepository.findByUsername(username);
+    }
+
+    public User register(@Nonnull String id, @Nonnull String username, @Nonnull String encodedPassword) {
+
+        User user = new User(username, encodedPassword);
+        user.setId(id);
+
+        create(user);
+
+        assert user.getId() != null;
+
+        return user;
     }
 
     public User register(@Nonnull String username, @Nonnull String encodedPassword) {
@@ -47,8 +60,6 @@ public class UserService {
         create(user);
 
         assert user.getId() != null;
-
-//        lokalService.createLokal(username, user);
 
         return user;
     }
@@ -63,8 +74,25 @@ public class UserService {
         }
     }
 
+    public void update(User user) {
+        userRepository.save(user);
+    }
+
     public boolean existsByUsername(@Nonnull String username) {
         return userRepository.existsByUsername(username);
     }
 
+    // move to player service/repository!
+    /**
+     *
+     * @param currentUser (@AuthenticatedPrincipal User currentUser)
+     * @return
+     */
+    public User getOrCreatePlayer(User currentUser) {
+        Optional<User> userOptional = findByIdOptional(currentUser.getId());
+
+        // if user is not persisted.
+        // !!! this behaviour is to provide game for anonymous users. this should be changed !!!!!
+        return userOptional.orElseGet(() -> register(currentUser.getId(), currentUser.getUsername(), User.ANONYMOUS_PASSWORD));
+    }
 }

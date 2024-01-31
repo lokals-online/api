@@ -23,13 +23,13 @@ public class BackgammonSessionResponse {
     public BackgammonSessionResponse(BackgammonSession backgammonSession) {
         this.id = backgammonSession.getId();
         this.home = new BackgammonPlayerResponse(
-                backgammonSession.getHome(),
+                backgammonSession.getHome().toPlayer(),
                 backgammonSession.getHomeScore(),
                 backgammonSession.getHomeFirstDice()
         );
         if (Objects.nonNull(backgammonSession.getAway())) {
             this.away = new BackgammonPlayerResponse(
-                    backgammonSession.getAway(),
+                    backgammonSession.getAway().toPlayer(),
                     backgammonSession.getAwayScore(),
                     backgammonSession.getAwayFirstDice()
             );

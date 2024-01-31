@@ -25,8 +25,8 @@ public class PishtiSessionResponse {
 
     public PishtiSessionResponse(PishtiSession pishtiSession) {
         this.id = pishtiSession.getId();
-        this.home = new PishtiPlayerResponse(pishtiSession.getHome(), pishtiSession.getHomeScore());
-        this.away = Objects.nonNull(pishtiSession.getAway()) ? new PishtiPlayerResponse(pishtiSession.getAway(), pishtiSession.getAwayScore()) : null;
+        this.home = new PishtiPlayerResponse(pishtiSession.getHome().toPlayer(), pishtiSession.getHomeScore());
+        this.away = Objects.nonNull(pishtiSession.getAway()) ? new PishtiPlayerResponse(pishtiSession.getAway().toPlayer(), pishtiSession.getAwayScore()) : null;
         this.settings = pishtiSession.getSettings();
         if (Objects.equals(pishtiSession.getStatus(), PishtiSessionStatus.STARTED) &&
                 Objects.nonNull(pishtiSession.getCurrentMatch())) {

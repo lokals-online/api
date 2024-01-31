@@ -1,7 +1,9 @@
 package online.lokals.lokalapi.game.batak;
 
+import java.util.List;
 import java.util.Objects;
 
+import online.lokals.lokalapi.users.User;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
@@ -33,7 +35,8 @@ public class BatakService {
 
     public Batak newMatch(BatakSession batakSession) {
 
-        Batak batak = new Batak(batakSession.getPlayers(), batakSession.getDealerIndex());
+        List<Player> players = batakSession.getUsers().stream().map(User::toPlayer).toList();
+        Batak batak = new Batak(players, batakSession.getDealerIndex());
         
         batakRepository.save(batak);
         
@@ -43,20 +46,27 @@ public class BatakService {
     public void bid(String batakId, Player player, Integer betValue) {
         Batak batak = batakRepository.findById(batakId).orElseThrow();
 
-        if (!batak.getStatus().equals(BatakStatus.BIDDING)) {
+        // move to validator
+        if (!batak.getStatus().equals(BatakStatus.BIDDING) ||
+                Objects.requireNonNull(batak.getTurn()).isEmpty() ||
+                !batak.getTurn().equals(player.getId())) {
             // throw
             return;
         }
 
         if (Objects.nonNull(betValue)) {
             batak.bid(player, betValue);
+
+            batakRepository.save(batak);
+
+            simpMessagingTemplate.convertAndSend(BATAK_TOPIC_DESTINATION + batakId + "/player/" + player.getId() + "/bid", betValue);
         } 
 
         // change turn!
         batak.changeBidTurn();
 
         if (batak.getTurn().equals(batak.getBid().getPlayerId())) {
-            log.debug("bidding completed. starting game..");
+            log.trace("bidding completed. starting game..");
 
             batak.setStatus(BatakStatus.WAITING_TRUMP);
         }
@@ -69,6 +79,8 @@ public class BatakService {
 
     public void chooseTrump(String batakId, Player player, CardType cardType) {
         Batak batak = batakRepository.findById(batakId).orElseThrow();
+
+        log.trace("{} choose {} as trump", player, cardType.toString());
 
         if (!batak.getStatus().equals(BatakStatus.WAITING_TRUMP)) {
             // throw
@@ -90,7 +102,8 @@ public class BatakService {
         log.trace("player[{}] played card[{}]", player, card);
 
         // validate(player, card);
-         if (batak.getCurrentTrick().getMoves().stream().anyMatch(batakMove -> batakMove.getPlayerId().equals(player.getId()))) {
+         if (batak.getCurrentTrick().getMoves().stream().anyMatch(batakMove -> batakMove.getPlayerId().equals(player.getId())) ||
+                !Objects.requireNonNull(batak.getTurn()).equals(player.getId())) {
              return;
          }
         // (stack.last < card) then check player hand
@@ -121,7 +134,8 @@ public class BatakService {
     }
 
     public Batak restart(BatakSession batakSession) {
-        Batak batak = new Batak(batakSession.getPlayers(), batakSession.getDealerIndex()-1);
+        List<Player> players = batakSession.getUsers().stream().map(User::toPlayer).toList();
+        Batak batak = new Batak(players, batakSession.getDealerIndex()-1);
 
         batakRepository.save(batak);
 

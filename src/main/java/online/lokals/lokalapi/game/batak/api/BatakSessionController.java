@@ -2,6 +2,7 @@ package online.lokals.lokalapi.game.batak.api;
 
 import online.lokals.lokalapi.game.pishti.PishtiSession;
 import online.lokals.lokalapi.game.pishti.api.PishtiSessionResponse;
+import online.lokals.lokalapi.users.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -23,6 +24,7 @@ public class BatakSessionController {
     
     private final BatakSessionService batakSessionService;
     private final BatakService batakService;
+    private final UserService userService;
 
 
     @PostMapping
@@ -30,8 +32,9 @@ public class BatakSessionController {
             @RequestBody Map<String, Object> settings,
             @AuthenticationPrincipal User currentUser
     ) {
+        User home = userService.getOrCreatePlayer(currentUser);
 
-        BatakSession batakSession = batakSessionService.create(currentUser.toPlayer(), settings);
+        BatakSession batakSession = batakSessionService.create(home, settings);
 
         return ResponseEntity.ok(new BatakSessionResponse(batakSession));
     }
@@ -46,7 +49,9 @@ public class BatakSessionController {
 
     @PostMapping("/{batakSessionId}/sit")
     private ResponseEntity<Void> sit(@PathVariable String batakSessionId, @AuthenticationPrincipal User currentUser) {
-        batakSessionService.sit(batakSessionId, currentUser.toPlayer());
+        User user = userService.getOrCreatePlayer(currentUser);
+
+        batakSessionService.sit(batakSessionId, user);
         
         return ResponseEntity.ok().build();
     }

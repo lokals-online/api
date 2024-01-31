@@ -6,6 +6,7 @@ import java.util.Objects;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import online.lokals.lokalapi.users.User;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
@@ -31,23 +32,14 @@ public class BackgammonSessionService {
     private final SimpMessagingTemplate simpMessagingTemplate;
 
     public BackgammonSession create(
-            @Nonnull Player homePlayer,
+            @Nonnull User home,
             @Nullable String opponent,
             Map<String, Object> gameSettings
     ) {
 
-        Player awayPlayer = Player.chirak().getId().equals(opponent) ? Player.chirak() : null;
+        User away = User.chirak().getId().equals(opponent) ? User.chirak() : null;
 
-        BackgammonSession backgammonSession = new BackgammonSession(homePlayer, awayPlayer, new BackgammonSettings(gameSettings));
-
-        backgammonSessionRepository.save(backgammonSession);
-
-        return backgammonSession;
-    }
-
-    public BackgammonSession create(@Nonnull Player homePlayer, Map<String, Object> gameSettings) {
-
-        BackgammonSession backgammonSession = new BackgammonSession(homePlayer, Player.chirak(), new BackgammonSettings(gameSettings));
+        BackgammonSession backgammonSession = new BackgammonSession(home, away, new BackgammonSettings(gameSettings));
 
         backgammonSessionRepository.save(backgammonSession);
 
@@ -65,7 +57,7 @@ public class BackgammonSessionService {
         simpMessagingTemplate.convertAndSend(BACKGAMMON_SESSION_TOPIC_DESTINATION + backgammonSession.getId() + "/voice-message", new VoiceMessage(player.getId(), file.getBytes()));
     }
 
-    public void sit(@Nonnull String sessionId, @Nonnull Player opponent) {
+    public void sit(@Nonnull String sessionId, @Nonnull User opponent) {
         BackgammonSession backgammonSession = backgammonSessionRepository.findById(sessionId).orElseThrow();
 
         if (Objects.nonNull(backgammonSession.getAway()) && !backgammonSession.playingWithChirak()) {

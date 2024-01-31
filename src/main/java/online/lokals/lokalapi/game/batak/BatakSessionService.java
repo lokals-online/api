@@ -8,6 +8,7 @@ import java.util.Optional;
 import online.lokals.lokalapi.game.batak.event.BatakSessionEvent;
 import online.lokals.lokalapi.game.pishti.PishtiSession;
 import online.lokals.lokalapi.game.pishti.PishtiSettings;
+import online.lokals.lokalapi.users.User;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,10 +32,10 @@ public class BatakSessionService {
     private final SimpMessagingTemplate simpMessagingTemplate;
 
     public BatakSession create(
-            @Nonnull Player player,
+            @Nonnull User user,
             Map<String, Object> gameSettings
     ) {
-        BatakSession batakSession = new BatakSession(player.getId(), player, new BatakSettings(gameSettings));
+        BatakSession batakSession = new BatakSession(user.getId(), user, new BatakSettings(gameSettings));
 
         return batakSessionRepository.save(batakSession);
     }
@@ -44,10 +45,10 @@ public class BatakSessionService {
     }
 
     @Transactional
-    public void sit(@Nonnull String batakSessionId, @Nonnull Player player) {
+    public void sit(@Nonnull String batakSessionId, @Nonnull User user) {
         BatakSession batakSession = batakSessionRepository.findById(batakSessionId).orElseThrow();
 
-        batakSession.addPlayer(player);
+        batakSession.addUser(user);
         
         if (batakSession.isReadyToStart()) {
             log.info("batak[" + batakSessionId + "] is ready to start");
@@ -89,8 +90,8 @@ public class BatakSessionService {
     public void check(@Nonnull String batakSessionId) {
         BatakSession batakSession = get(batakSessionId);
 
-        if (Objects.nonNull(batakSession.getCurrentMatch()) &&
-                batakSession.getCurrentMatch().getStatus().equals(BatakStatus.ENDED)) {
+        log.trace("checking batak session[{}]..", batakSession);
+        if (Objects.nonNull(batakSession.getCurrentMatch()) && batakSession.getCurrentMatch().getStatus().equals(BatakStatus.ENDED)) {
 
             Optional<Map.Entry<String, Integer>> winner = batakSession.getScores().entrySet().stream()
                     .filter(entrySet -> entrySet.getValue() >= batakSession.getSettings().getRaceTo())
@@ -130,7 +131,6 @@ public class BatakSessionService {
 
     public void start(String batakSessionId) {
         BatakSession batakSession = get(batakSessionId);
-        batakSession.setStatus(BatakSessionStatus.ENDED);
 
         batakSessionRepository.save(batakSession);
 
