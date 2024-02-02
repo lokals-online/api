@@ -12,7 +12,9 @@ import java.util.Map;
 @Setter
 //@NoArgsConstructor
 public class BackgammonSettings{
+
     int raceTo;
+
     @Nullable
     private Integer timeLimit;
 

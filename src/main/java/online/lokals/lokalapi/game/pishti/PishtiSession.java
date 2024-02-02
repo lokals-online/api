@@ -55,10 +55,6 @@ public class PishtiSession implements GameSession {
         this.status = PishtiSessionStatus.WAITING;
     }
 
-//    public User getAway() {
-//        return Objects.requireNonNullElse(away, User.chirak());
-//    }
-
     public void addMatch(Pishti pishti) {
         this.matches.add(pishti);
     }

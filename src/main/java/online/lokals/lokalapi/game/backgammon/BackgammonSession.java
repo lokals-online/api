@@ -56,10 +56,6 @@ public class BackgammonSession implements GameSession {
                 BackgammonSessionStatus.WAITING;
     }
 
-    public User getAway() {
-        return Objects.requireNonNullElse(away, User.chirak());
-    }
-
     public void addMatch(Backgammon backgammon) {
         this.matches.add(backgammon);
     }
@@ -136,6 +132,6 @@ public class BackgammonSession implements GameSession {
     }
 
     public boolean playingWithChirak() {
-        return getAway().getId().equals("chirak");
+        return Objects.nonNull(away) && getAway().getId().equals("chirak");
     }
 }
