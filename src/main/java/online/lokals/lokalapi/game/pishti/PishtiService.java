@@ -85,24 +85,33 @@ public class PishtiService {
             Thread.sleep(500);
         }
 
-        if (pishti.checkGameEnded()) {
-            log.info("game ended");
-            log.trace("first player score: {}", pishti.getFirstPlayer().getScore());
-            log.trace("second player score: {}", pishti.getSecondPlayer().getScore());
-
-            pishti.end();
-        }
-
         // check remaining cards
         if (pishti.checkRoundEnded()) {
             log.trace("round ended....");
             pishti.endRound();
 
-            pishti.startNewRound();
+            if (pishti.checkGameEnded()) {
+                log.info("game ended");
+                log.trace("first player score: {}", pishti.getFirstPlayer().getScore());
+                log.trace("second player score: {}", pishti.getSecondPlayer().getScore());
 
-            pishtiRepository.save(pishti);
+                pishti.end();
 
-            simpMessagingTemplate.convertAndSend(PISHTI_TOPIC_DESTINATION + pishtiId, Void.class);
+                pishtiRepository.save(pishti);
+
+                simpMessagingTemplate.convertAndSend(PISHTI_TOPIC_DESTINATION + pishtiId, Void.class);
+            }
+            else {
+                pishti.startNewRound();
+
+                pishtiRepository.save(pishti);
+
+                simpMessagingTemplate.convertAndSend(PISHTI_TOPIC_DESTINATION + pishtiId + "/newRound", Void.class);
+
+                Thread.sleep(500);
+
+                simpMessagingTemplate.convertAndSend(PISHTI_TOPIC_DESTINATION + pishtiId, Void.class);
+            }
         }
         else {
             // change turn
